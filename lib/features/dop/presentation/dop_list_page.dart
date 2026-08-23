@@ -416,6 +416,7 @@ class _DopDataTable extends StatelessWidget {
             columnSpacing: 22,
             horizontalMargin: 16,
             columns: const [
+              DataColumn(label: Text('No. DOP')),
               DataColumn(label: Text('Hari')),
               DataColumn(label: Text('Tanggal')),
               DataColumn(label: Text('Perusahaan')),
@@ -461,6 +462,7 @@ class _DopDataTable extends StatelessWidget {
       rows.add(
         DataRow(
           cells: [
+            DataCell(SelectableText(item.dopNumber)),
             DataCell(Text(item.dayName)),
             DataCell(Text(item.dopDate)),
             DataCell(Text(item.companyName)),
