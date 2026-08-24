@@ -3,6 +3,7 @@ class CompanyUserModel {
   final String companyId;
   final String userId;
   final String role;
+  final int? hierarchyLayer;
   final String? position;
   final String? department;
   final String? jobSiteId;
@@ -16,6 +17,7 @@ class CompanyUserModel {
     required this.companyId,
     required this.userId,
     required this.role,
+    required this.hierarchyLayer,
     required this.position,
     required this.department,
     required this.jobSiteId,
@@ -32,6 +34,7 @@ class CompanyUserModel {
       companyId: map['company_id'] as String,
       userId: map['user_id'] as String,
       role: map['role'] as String,
+      hierarchyLayer: map['hierarchy_layer'] as int?,
       position: map['position'] as String?,
       department: map['department'] as String?,
       jobSiteId: map['job_site_id'] as String?,

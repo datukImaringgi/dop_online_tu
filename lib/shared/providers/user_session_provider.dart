@@ -67,3 +67,68 @@ final currentRoleProvider = FutureProvider<String?>((ref) async {
 
   return companyAccess.role;
 });
+
+final currentHierarchyLayerProvider =
+FutureProvider<int?>((ref) async {
+  final companyAccess = await ref.watch(
+    currentCompanyAccessProvider.future,
+  );
+
+  if (companyAccess == null) {
+    return null;
+  }
+
+  return companyAccess.hierarchyLayer;
+});
+
+final canCreateDopProvider = FutureProvider<bool>((ref) async {
+  final layer = await ref.watch(
+    currentHierarchyLayerProvider.future,
+  );
+
+  if (layer == null) {
+    return false;
+  }
+
+  return layer >= 1 && layer <= 5;
+});
+
+final canManageCompanyMasterProvider =
+FutureProvider<bool>((ref) async {
+  final layer = await ref.watch(
+    currentHierarchyLayerProvider.future,
+  );
+
+  if (layer == null) {
+    return false;
+  }
+
+  return layer >= 3;
+});
+
+final canApproveLayer3Provider =
+FutureProvider<bool>((ref) async {
+  final layer = await ref.watch(
+    currentHierarchyLayerProvider.future,
+  );
+
+  return layer == 3;
+});
+
+final canApproveLayer4Provider =
+FutureProvider<bool>((ref) async {
+  final layer = await ref.watch(
+    currentHierarchyLayerProvider.future,
+  );
+
+  return layer == 4;
+});
+
+final isPlatformSuperAdminProvider =
+FutureProvider<bool>((ref) async {
+  final layer = await ref.watch(
+    currentHierarchyLayerProvider.future,
+  );
+
+  return layer == 5;
+});

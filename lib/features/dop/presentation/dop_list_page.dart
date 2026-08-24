@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:data_table_2/data_table_2.dart';
 
 import '../data/dop_list_provider.dart';
 import '../domain/dop_list_item_model.dart';
@@ -19,6 +20,8 @@ class _DopListPageState extends ConsumerState<DopListPage> {
   String selectedSite = 'Semua';
   String selectedUnitType = 'Semua';
   String selectedStatus = 'Semua';
+  String dopNumberSearchQuery = '';
+  final dopNumberSearchController = TextEditingController();
 
   List<String> _buildOptions(List<String> values) {
     final set = <String>{};
@@ -35,6 +38,33 @@ class _DopListPageState extends ConsumerState<DopListPage> {
     return ['Semua', ...result];
   }
 
+  void handleDopNumberSearchChanged(String value) {
+    setState(() {
+      dopNumberSearchQuery = normalizeSearchText(value);
+    });
+  }
+
+  void clearDopNumberSearch() {
+    dopNumberSearchController.clear();
+
+    setState(() {
+      dopNumberSearchQuery = '';
+    });
+  }
+
+  String normalizeSearchText(String value) {
+    return value
+        .trim()
+        .toLowerCase()
+        .replaceAll(RegExp(r'\s+'), ' ');
+  }
+
+  @override
+  void dispose() {
+    dopNumberSearchController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final dopListAsync = ref.watch(dopListProvider);
@@ -42,7 +72,7 @@ class _DopListPageState extends ConsumerState<DopListPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9FC),
       body: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(20),
         child: dopListAsync.when(
           loading: () {
             return const Center(
@@ -85,7 +115,21 @@ class _DopListPageState extends ConsumerState<DopListPage> {
               final matchStatus = selectedStatus == 'Semua' ||
                   item.status == selectedStatus;
 
-              return matchCompany && matchSite && matchUnitType && matchStatus;
+              final normalizedDopNumber = normalizeSearchText(
+                  item.dopNumber,
+              );
+
+              final matchDopNumber =
+              dopNumberSearchQuery.isEmpty ||
+              normalizedDopNumber.contains(
+                  dopNumberSearchQuery,
+              );
+
+              return matchCompany &&
+                  matchSite &&
+                  matchUnitType &&
+                  matchStatus &&
+                  matchDopNumber;
             }).toList();
 
             return Column(
@@ -101,7 +145,7 @@ class _DopListPageState extends ConsumerState<DopListPage> {
                           Text(
                             'DOP List',
                             style: TextStyle(
-                              fontSize: 28,
+                              fontSize: 26,
                               fontWeight: FontWeight.bold,
                               color: Color(0xFF0F172A),
                             ),
@@ -111,7 +155,7 @@ class _DopListPageState extends ConsumerState<DopListPage> {
                             'Daftar Daily Operation Plan Transportasi',
                             style: TextStyle(
                               color: Color(0xFF64748B),
-                              fontSize: 14,
+                              fontSize: 13,
                             ),
                           ),
                         ],
@@ -120,6 +164,10 @@ class _DopListPageState extends ConsumerState<DopListPage> {
                     Row(
                       children: [
                         ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.orangeAccent,
+                            foregroundColor: Colors.black,
+                          ),
                           onPressed: () {
                             context.go('/dop-request');
                           },
@@ -139,7 +187,65 @@ class _DopListPageState extends ConsumerState<DopListPage> {
                   ],
                 ),
 
-                const SizedBox(height: 24),
+                const SizedBox(height: 18),
+
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: SizedBox(
+                    width: 420,
+                    child: TextField(
+                      controller: dopNumberSearchController,
+                      onChanged: handleDopNumberSearchChanged,
+                      decoration: InputDecoration(
+                        labelText: 'Cari No. DOP',
+                        hintText: 'Contoh: 20260824-001',
+                        labelStyle: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF475569),
+                        ),
+                        hintStyle: const TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF94A3B8),
+                        ),
+                        prefixIcon: const Icon(
+                          Icons.search,
+                          size: 18,
+                        ),
+                        prefixIconConstraints: const BoxConstraints(
+                          minWidth: 38,
+                          minHeight: 38,
+                        ),
+                        suffixIcon: dopNumberSearchQuery.isEmpty
+                            ? null
+                            : IconButton(
+                          onPressed: clearDopNumberSearch,
+                          tooltip: 'Hapus pencarian',
+                          visualDensity: VisualDensity.compact,
+                          icon: const Icon(
+                            Icons.close,
+                            size: 18,
+                          ),
+                        ),
+                        isDense: true,
+                        filled: true,
+                        fillColor: Colors.white,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Color(0xFF0F172A),
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 10),
 
                 _FilterBar(
                   companyOptions: companyOptions,
@@ -172,7 +278,7 @@ class _DopListPageState extends ConsumerState<DopListPage> {
                   },
                 ),
 
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
 
                 Expanded(
                   child: Card(
@@ -250,13 +356,16 @@ class _FilterBar extends StatelessWidget {
       elevation: 0,
       color: Colors.white,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(12),
         side: const BorderSide(
           color: Color(0xFFE2E8F0),
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 10,
+        ),
         child: Row(
           children: [
             Expanded(
@@ -267,7 +376,7 @@ class _FilterBar extends StatelessWidget {
                 onChanged: onCompanyChanged,
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 10),
             Expanded(
               child: _FilterDropdown(
                 label: 'Site',
@@ -276,7 +385,7 @@ class _FilterBar extends StatelessWidget {
                 onChanged: onSiteChanged,
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 10),
             Expanded(
               child: _FilterDropdown(
                 label: 'Type Unit',
@@ -285,7 +394,7 @@ class _FilterBar extends StatelessWidget {
                 onChanged: onUnitTypeChanged,
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 10),
             Expanded(
               child: _FilterDropdown(
                 label: 'Status Approval',
@@ -354,35 +463,74 @@ class _FilterDropdown extends StatelessWidget {
     return DropdownButtonFormField<String>(
       value: value,
       isExpanded: true,
+      icon: const Icon(
+        Icons.keyboard_arrow_down,
+        size: 19,
+      ),
+      iconSize: 19,
+      style: const TextStyle(
+        color: Color(0xFF0F172A),
+        fontSize: 13,
+        fontWeight: FontWeight.w500,
+      ),
       decoration: InputDecoration(
         labelText: label,
+        labelStyle: const TextStyle(
+          fontSize: 12,
+          color: Color(0xFF475569),
+        ),
         isDense: true,
         contentPadding: const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 12,
+          horizontal: 11,
+          vertical: 10,
         ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(
+            color: Color(0xFF94A3B8),
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(
+            color: Color(0xFF0D6EFD),
+            width: 1.4,
+          ),
         ),
       ),
-      items: items.map((item) {
-        return DropdownMenuItem<String>(
+      items: _buildDropdownItems(),
+      onChanged: _handleChanged,
+    );
+  }
+
+  List<DropdownMenuItem<String>> _buildDropdownItems() {
+    final dropdownItems = <DropdownMenuItem<String>>[];
+
+    for (final item in items) {
+      dropdownItems.add(
+        DropdownMenuItem<String>(
           value: item,
           child: Text(
             formatLabel == null ? item : formatLabel!(item),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-        );
-      }).toList(),
-      onChanged: (value) {
-        if (value == null) {
-          return;
-        }
+        ),
+      );
+    }
 
-        onChanged(value);
-      },
-    );
+    return dropdownItems;
+  }
+
+  void _handleChanged(String? selectedValue) {
+    if (selectedValue == null) {
+      return;
+    }
+
+    onChanged(selectedValue);
   }
 }
 
@@ -412,66 +560,170 @@ class _DopDataTableState extends State<_DopDataTable> {
 
   @override
   Widget build(BuildContext context) {
-    return Scrollbar(
-      controller: horizontalScrollController,
-      thumbVisibility: true,
-      trackVisibility: true,
-      interactive: true,
-      scrollbarOrientation: ScrollbarOrientation.bottom,
-      child: SingleChildScrollView(
-        controller: horizontalScrollController,
-        scrollDirection: Axis.horizontal,
-        child: DataTable(
-          headingRowColor: WidgetStateProperty.all(
-            const Color(0xFFF8FAFC),
-          ),
-          headingTextStyle: const TextStyle(
-            color: Color(0xFF334155),
-            fontWeight: FontWeight.bold,
-            fontSize: 12,
-          ),
-          dataTextStyle: const TextStyle(
-            color: Color(0xFF0F172A),
-            fontSize: 12,
-          ),
-          columnSpacing: 22,
-          horizontalMargin: 16,
-          columns: const [
-            DataColumn(label: Text('No. DOP')),
-            DataColumn(label: Text('Hari')),
-            DataColumn(label: Text('Tanggal')),
-            DataColumn(label: Text('Perusahaan')),
-            DataColumn(label: Text('Job Site')),
-            DataColumn(label: Text('Rencana Pekerjaan')),
-            DataColumn(label: Text('Jenis Unit')),
-            DataColumn(label: Text('No Lambung')),
-            DataColumn(label: Text('Mulai')),
-            DataColumn(label: Text('Akhir')),
-            DataColumn(label: Text('Nama')),
-            DataColumn(label: Text('SID')),
-            DataColumn(label: Text('Expired SID')),
-            DataColumn(label: Text('Expired SIMPER')),
-            DataColumn(label: Text('Rute')),
-            DataColumn(label: Text('Observer')),
-            DataColumn(label: Text('Kategori Kritis')),
-            DataColumn(label: Text('Tingkat Risiko')),
-            DataColumn(label: Text('Prosedur/JSA')),
-            DataColumn(label: Text('Shift')),
-            DataColumn(label: Text('Layer 1')),
-            DataColumn(label: Text('Layer 2')),
-            DataColumn(label: Text('Layer 3')),
-            DataColumn(label: Text('Layer 4')),
-            DataColumn(label: Text('RIC')),
-            DataColumn(label: Text('Area')),
-            DataColumn(label: Text('Perusahaan')),
-            DataColumn(label: Text('Status')),
-            DataColumn(label: Text('Dibuat Oleh')),
-            DataColumn(label: Text('Disetujui Oleh')),
-            DataColumn(label: Text('Diketahui Oleh')),
-          ],
-          rows: _buildRows(),
-        ),
+    return DataTable2(
+      scrollController: verticalScrollController,
+      horizontalScrollController: horizontalScrollController,
+
+      fixedTopRows: 1,
+
+      isVerticalScrollBarVisible: true,
+      isHorizontalScrollBarVisible: true,
+
+      minWidth: 4200,
+
+      headingRowHeight: 30,
+      dataRowHeight: 34,
+
+      columnSpacing: 16,
+      horizontalMargin: 12,
+
+      dividerThickness: 0.8,
+
+      headingRowColor: WidgetStateProperty.all(
+        const Color(0xFFF8FAFC),
       ),
+
+      headingTextStyle: const TextStyle(
+        color: Color(0xFF334155),
+        fontWeight: FontWeight.w700,
+        fontSize: 11,
+        height: 1.1,
+      ),
+
+      dataTextStyle: const TextStyle(
+        color: Color(0xFF0F172A),
+        fontSize: 11,
+        height: 1.15,
+      ),
+
+      columns: const [
+        DataColumn2(
+          label: Text('No. DOP'),
+          fixedWidth: 235,
+        ),
+        DataColumn2(
+          label: Text('Hari'),
+          fixedWidth: 70,
+        ),
+        DataColumn2(
+          label: Text('Tanggal'),
+          fixedWidth: 95,
+        ),
+        DataColumn2(
+          label: Text('Perusahaan'),
+          fixedWidth: 145,
+        ),
+        DataColumn2(
+          label: Text('Job Site'),
+          fixedWidth: 145,
+        ),
+        DataColumn2(
+          label: Text('Rencana Pekerjaan'),
+          fixedWidth: 260,
+        ),
+        DataColumn2(
+          label: Text('Jenis Unit'),
+          fixedWidth: 85,
+        ),
+        DataColumn2(
+          label: Text('No Lambung'),
+          fixedWidth: 110,
+        ),
+        DataColumn2(
+          label: Text('Mulai'),
+          fixedWidth: 70,
+        ),
+        DataColumn2(
+          label: Text('Akhir'),
+          fixedWidth: 70,
+        ),
+        DataColumn2(
+          label: Text('Nama'),
+          fixedWidth: 150,
+        ),
+        DataColumn2(
+          label: Text('SID'),
+          fixedWidth: 85,
+        ),
+        DataColumn2(
+          label: Text('Expired SID'),
+          fixedWidth: 105,
+        ),
+        DataColumn2(
+          label: Text('Expired SIMPER'),
+          fixedWidth: 120,
+        ),
+        DataColumn2(
+          label: Text('Rute'),
+          fixedWidth: 170,
+        ),
+        DataColumn2(
+          label: Text('Observer'),
+          fixedWidth: 130,
+        ),
+        DataColumn2(
+          label: Text('Kategori Kritis'),
+          fixedWidth: 115,
+        ),
+        DataColumn2(
+          label: Text('Tingkat Risiko'),
+          fixedWidth: 105,
+        ),
+        DataColumn2(
+          label: Text('Prosedur/JSA'),
+          fixedWidth: 190,
+        ),
+        DataColumn2(
+          label: Text('Shift'),
+          fixedWidth: 90,
+        ),
+        DataColumn2(
+          label: Text('Layer 1'),
+          fixedWidth: 150,
+        ),
+        DataColumn2(
+          label: Text('Layer 2'),
+          fixedWidth: 150,
+        ),
+        DataColumn2(
+          label: Text('Layer 3'),
+          fixedWidth: 150,
+        ),
+        DataColumn2(
+          label: Text('Layer 4'),
+          fixedWidth: 150,
+        ),
+        DataColumn2(
+          label: Text('RIC'),
+          fixedWidth: 150,
+        ),
+        DataColumn2(
+          label: Text('Area'),
+          fixedWidth: 125,
+        ),
+        DataColumn2(
+          label: Text('Perusahaan Transportasi'),
+          fixedWidth: 175,
+        ),
+        DataColumn2(
+          label: Text('Status'),
+          fixedWidth: 115,
+        ),
+        DataColumn2(
+          label: Text('Dibuat Oleh'),
+          fixedWidth: 145,
+        ),
+        DataColumn2(
+          label: Text('Disetujui Oleh'),
+          fixedWidth: 145,
+        ),
+        DataColumn2(
+          label: Text('Diketahui Oleh'),
+          fixedWidth: 145,
+        ),
+      ],
+
+      rows: _buildRows(),
     );
   }
 
@@ -564,8 +816,8 @@ class _StatusBadge extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: 10,
-        vertical: 5,
+        horizontal: 8,
+        vertical: 4,
       ),
       decoration: BoxDecoration(
         // ignore: deprecated_member_use
@@ -576,7 +828,7 @@ class _StatusBadge extends StatelessWidget {
         text,
         style: TextStyle(
           color: badgeColor,
-          fontSize: 11,
+          fontSize: 10.5,
           fontWeight: FontWeight.bold,
         ),
       ),

@@ -84,6 +84,7 @@ class DashboardPage extends ConsumerWidget {
                         companyName: companyAccess.companyName ?? '-',
                         companyCode: companyAccess.companyCode ?? '-',
                         role: companyAccess.role,
+                        hierarchyLayer: companyAccess.hierarchyLayer,
                         position: companyAccess.position ?? '-',
                         department: companyAccess.department ?? '-',
                       ),
@@ -187,6 +188,7 @@ class _CurrentUserAccessCard extends StatelessWidget {
   final String companyName;
   final String companyCode;
   final String role;
+  final int? hierarchyLayer;
   final String position;
   final String department;
 
@@ -197,6 +199,7 @@ class _CurrentUserAccessCard extends StatelessWidget {
     required this.companyName,
     required this.companyCode,
     required this.role,
+    required this.hierarchyLayer,
     required this.position,
     required this.department,
   });
@@ -261,6 +264,12 @@ class _CurrentUserAccessCard extends StatelessWidget {
                       _CompactInfoRow(
                         label: 'SID',
                         value: sid,
+                      ),
+                      _CompactInfoRow(
+                        label: 'Hierarchy',
+                        value: hierarchyLayer == null
+                            ? '-'
+                            : 'Layer $hierarchyLayer',
                       ),
                       _CompactInfoRow(
                         label: 'Email Notifikasi',
