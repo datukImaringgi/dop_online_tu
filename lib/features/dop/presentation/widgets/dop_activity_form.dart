@@ -295,11 +295,10 @@ class DopActivityForm extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
+        _buildActionButtons(),
         DopSectionCard(
           title: 'Detail Pekerjaan',
           children: [
-            _buildActionButtons(),
-            const SizedBox(height: 12),
             TextFormField(
               controller: workPlanController,
               style: const TextStyle(
@@ -674,12 +673,19 @@ class DopActivityForm extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
         OutlinedButton.icon(
+          style: OutlinedButton.styleFrom(
+            backgroundColor: Colors.white
+          ),
           onPressed: isSubmitting ? null : onClear,
           icon: const Icon(Icons.clear),
           label: const Text('Clear'),
         ),
         const SizedBox(width: 10),
         ElevatedButton.icon(
+          style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orangeAccent,
+              foregroundColor: Colors.black,
+          ),
           onPressed: isSubmitting ? null : onAddOrUpdate,
           icon: Icon(
             isEditing ? Icons.save_outlined : Icons.add,

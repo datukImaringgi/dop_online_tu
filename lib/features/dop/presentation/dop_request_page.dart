@@ -7,6 +7,8 @@ import '../domain/dop_activity_draft.dart';
 import 'widgets/dop_activity_table.dart';
 import 'widgets/dop_header_form.dart';
 import 'widgets/dop_activity_form.dart';
+import '../data/dop_list_provider.dart';
+import '../data/dop_submission_repository.dart';
 
 class DopRequestPage extends ConsumerStatefulWidget {
   const DopRequestPage({super.key});
@@ -31,11 +33,29 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
   final layer3Controller = TextEditingController();
   final layer4Controller = TextEditingController();
 
+  final List<DopActivityDraft> activityDrafts = <DopActivityDraft>[];
+
   DateTime selectedDate = DateTime.now().add(
     const Duration(days: 1),
   );
   TimeOfDay? startTime;
   TimeOfDay? endTime;
+
+  TimeOfDay parseTimeOfDay(String value) {
+    final parts = value.split(':');
+
+    if (parts.length < 2) {
+      return const TimeOfDay(hour: 0, minute: 0);
+    }
+
+    final hour = int.tryParse(parts[0]) ?? 0;
+    final minute = int.tryParse(parts[1]) ?? 0;
+
+    return TimeOfDay(
+      hour: hour,
+      minute: minute,
+    );
+  }
 
   String? selectedJobSiteId;
   String? selectedUnitId;
@@ -52,28 +72,7 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
   String? selectedLayer3UserId;
   String? selectedLayer4UserId;
 
-  bool isSubmitting = false;
-
-  final List<DopActivityDraft> activityDrafts = <DopActivityDraft>[];
-
   String? editingDraftId;
-
-  Map<String, dynamic>? findById(
-      List<Map<String, dynamic>> items,
-      String? id,
-      ) {
-    if (id == null) {
-      return null;
-    }
-
-    for (final item in items) {
-      if (item['id'] == id) {
-        return item;
-      }
-    }
-
-    return null;
-  }
 
   String generateLocalId() {
     return DateTime.now().microsecondsSinceEpoch.toString();
@@ -156,6 +155,30 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
     return null;
   }
 
+  String extractSubmissionError(Object error) {
+    final message = error.toString();
+
+    const postgrestPrefix = 'PostgrestException(message: ';
+
+    if (message.startsWith(postgrestPrefix)) {
+      final withoutPrefix = message.replaceFirst(
+        postgrestPrefix,
+        '',
+      );
+
+      final commaIndex = withoutPrefix.indexOf(',');
+
+      if (commaIndex > 0) {
+        return withoutPrefix.substring(0, commaIndex);
+      }
+    }
+
+    return message.replaceFirst(
+      'Exception: ',
+      '',
+    );
+  }
+
   int findDraftIndex(String localId) {
     for (var index = 0; index < activityDrafts.length; index++) {
       if (activityDrafts[index].localId == localId) {
@@ -169,6 +192,8 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
   int timeToMinutes(TimeOfDay time) {
     return (time.hour * 60) + time.minute;
   }
+
+  bool isSubmitting = false;
 
   bool isActivityTimeValid() {
     if (startTime == null || endTime == null) {
@@ -211,20 +236,48 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
     return isToday || isTomorrow;
   }
 
-  TimeOfDay parseTimeOfDay(String value) {
-    final parts = value.split(':');
+  bool isSelectedDopDateValid() {
+    final now = DateTime.now();
 
-    if (parts.length < 2) {
-      return const TimeOfDay(hour: 0, minute: 0);
+    final today = DateTime(
+      now.year,
+      now.month,
+      now.day,
+    );
+
+    final tomorrow = today.add(
+      const Duration(days: 1),
+    );
+
+    final normalizedSelectedDate = DateTime(
+      selectedDate.year,
+      selectedDate.month,
+      selectedDate.day,
+    );
+
+    return normalizedSelectedDate == today ||
+        normalizedSelectedDate == tomorrow;
+  }
+
+  bool hasUnfinishedEditing() {
+    return editingDraftId != null;
+  }
+
+  Map<String, dynamic>? findById(
+      List<Map<String, dynamic>> items,
+      String? id,
+      ) {
+    if (id == null) {
+      return null;
     }
 
-    final hour = int.tryParse(parts[0]) ?? 0;
-    final minute = int.tryParse(parts[1]) ?? 0;
+    for (final item in items) {
+      if (item['id'] == id) {
+        return item;
+      }
+    }
 
-    return TimeOfDay(
-      hour: hour,
-      minute: minute,
-    );
+    return null;
   }
 
   DateTime normalizeAllowedInitialDate({
@@ -295,6 +348,100 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
     });
 
     showMessage('Aktivitas berhasil dihapus');
+  }
+
+  Future<void> submitDop() async {
+    if (isSubmitting) {
+      return;
+    }
+
+    if (selectedJobSiteId == null) {
+      showMessage('Job Site wajib dipilih');
+      return;
+    }
+
+    if (!isSelectedDopDateValid()) {
+      showMessage(
+        'Tanggal DOP hanya dapat dibuat untuk hari ini atau besok.',
+      );
+      return;
+    }
+
+    if (activityDrafts.isEmpty) {
+      showMessage(
+        'Minimal satu aktivitas kendaraan wajib ditambahkan.',
+      );
+      return;
+    }
+
+    if (hasUnfinishedEditing()) {
+      showMessage(
+        'Selesaikan Update Aktivitas sebelum Submit DOP.',
+      );
+      return;
+    }
+
+    final shouldSubmit = await showSubmitConfirmation();
+
+    if (!shouldSubmit) {
+      return;
+    }
+
+    setState(() {
+      isSubmitting = true;
+    });
+
+    try {
+      final repository = ref.read(
+        dopSubmissionRepositoryProvider,
+      );
+
+      final result = await repository.submitDop(
+        jobSiteId: selectedJobSiteId!,
+        dopDate: selectedDate,
+        dayName: getDayName(selectedDate),
+        activities: activityDrafts,
+      );
+
+      ref.invalidate(dopListProvider);
+
+      if (!mounted) {
+        return;
+      }
+
+      showMessage(
+        'DOP ${result.dopNumber} berhasil disubmit.',
+      );
+
+      await Future<void>.delayed(
+        const Duration(milliseconds: 700),
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      context.go('/dop-list');
+    } catch (error) {
+      showMessage(
+        extractSubmissionError(error),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          isSubmitting = false;
+        });
+      }
+    }
+  }
+
+  Future<bool> showSubmitConfirmation() async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: buildSubmitConfirmationDialog,
+    );
+
+    return result ?? false;
   }
 
   Future<void> pickDate() async {
@@ -781,6 +928,33 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
     );
   }
 
+  Widget buildSubmitConfirmationDialog(
+      BuildContext dialogContext,
+      ) {
+    return AlertDialog(
+      title: const Text('Submit DOP'),
+      content: Text(
+        'Submit DOP untuk ${activityDrafts.length} aktivitas kendaraan?\n\n'
+            'Tanggal: ${getFormattedHeaderDate()}',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () {
+            Navigator.of(dialogContext).pop(false);
+          },
+          child: const Text('Batal'),
+        ),
+        FilledButton.icon(
+          onPressed: () {
+            Navigator.of(dialogContext).pop(true);
+          },
+          icon: const Icon(Icons.send_outlined),
+          label: const Text('Submit DOP'),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final jobSitesAsync = ref.watch(jobSitesProvider);
@@ -879,10 +1053,7 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
                   ElevatedButton.icon(
                     onPressed: isSubmitting || activityDrafts.isEmpty
                         ? null
-                        : () {
-                      showMessage('Draft siap disubmit. Proses batch submission akan dibuat pada tahap berikutnya.',
-                      );
-                    },
+                        : submitDop,
                     icon: isSubmitting
                         ? const SizedBox(
                           width: 16,

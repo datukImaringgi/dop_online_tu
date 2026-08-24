@@ -73,6 +73,7 @@ class DopSectionCard extends StatelessWidget {
                 fontWeight: FontWeight.bold,
               ),
             ),
+            const SizedBox(height: 14),
             ...children,
           ],
         ),

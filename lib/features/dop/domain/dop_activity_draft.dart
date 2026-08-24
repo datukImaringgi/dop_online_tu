@@ -135,4 +135,33 @@ class DopActivityDraft {
       'is_active': true,
     };
   }
+
+  Map<String, dynamic> toSubmissionPayload() {
+    return {
+      'work_plan': workPlan,
+      'unit_type': unitType,
+      'unit_number': unitNumber,
+      'start_time': startTime,
+      'end_time': endTime,
+      'driver_name': driverName,
+      'sid': sid,
+      'sid_expired_date': sidExpiredDate,
+      'simper_expired_date': simperExpiredDate,
+      'route': routeName,
+      'observer': observer,
+      'is_critical': true,
+      'risk_level': 'High',
+      'jsa_procedure': jsaProcedure,
+      'shift': shift,
+      'layer_1': layer1,
+      'layer_2': layer2,
+      'layer_3': layer3,
+      'layer_4': layer4,
+      'control_room': controlRoomName,
+      'area_type': areaType,
+      'transport_company': transportCompany,
+      'notes': notes,
+      'is_active': true,
+    };
+  }
 }

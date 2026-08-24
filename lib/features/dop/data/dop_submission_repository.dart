@@ -1,0 +1,102 @@
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../domain/dop_activity_draft.dart';
+import '../domain/dop_submission_result.dart';
+import '../../../shared/providers/supabase_provider.dart';
+
+final dopSubmissionRepositoryProvider =
+Provider<DopSubmissionRepository>((ref) {
+  final supabase = ref.watch(supabaseProvider);
+
+  return DopSubmissionRepository(
+    supabase: supabase,
+  );
+});
+
+class DopSubmissionRepository {
+  final SupabaseClient supabase;
+
+  const DopSubmissionRepository({
+    required this.supabase,
+  });
+
+  Future<DopSubmissionResult> submitDop({
+    required String jobSiteId,
+    required DateTime dopDate,
+    required String dayName,
+    required List<DopActivityDraft> activities,
+  }) async {
+    if (jobSiteId.trim().isEmpty) {
+      throw Exception('Job Site wajib dipilih');
+    }
+
+    if (activities.isEmpty) {
+      throw Exception(
+        'Minimal satu aktivitas kendaraan wajib ditambahkan',
+      );
+    }
+
+    final activityPayloads = <Map<String, dynamic>>[];
+
+    for (final activity in activities) {
+      activityPayloads.add(
+        activity.toSubmissionPayload(),
+      );
+    }
+
+    final response = await supabase.rpc(
+      'submit_dop_request',
+      params: {
+        'p_job_site_id': jobSiteId,
+        'p_dop_date': formatDate(dopDate),
+        'p_day_name': dayName,
+        'p_activities': activityPayloads,
+      },
+    );
+
+    final resultMap = extractResultMap(response);
+
+    return DopSubmissionResult.fromMap(resultMap);
+  }
+
+  Map<String, dynamic> extractResultMap(dynamic response) {
+    if (response is List) {
+      if (response.isEmpty) {
+        throw Exception(
+          'RPC tidak mengembalikan hasil submission',
+        );
+      }
+
+      final firstItem = response.first;
+
+      if (firstItem is Map<String, dynamic>) {
+        return firstItem;
+      }
+
+      if (firstItem is Map) {
+        return Map<String, dynamic>.from(firstItem);
+      }
+    }
+
+    if (response is Map<String, dynamic>) {
+      return response;
+    }
+
+    if (response is Map) {
+      return Map<String, dynamic>.from(response);
+    }
+
+    throw Exception(
+      'Format hasil RPC tidak dikenali',
+    );
+  }
+
+  String formatDate(DateTime date) {
+    final year = date.year.toString().padLeft(4, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    final day = date.day.toString().padLeft(2, '0');
+
+    return '$year-$month-$day';
+  }
+}

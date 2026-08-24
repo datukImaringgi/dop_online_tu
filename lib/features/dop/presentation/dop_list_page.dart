@@ -386,7 +386,7 @@ class _FilterDropdown extends StatelessWidget {
   }
 }
 
-class _DopDataTable extends StatelessWidget {
+class _DopDataTable extends StatefulWidget {
   final List<DopListItemModel> items;
 
   const _DopDataTable({
@@ -394,62 +394,82 @@ class _DopDataTable extends StatelessWidget {
   });
 
   @override
+  State<_DopDataTable> createState() {
+    return _DopDataTableState();
+  }
+}
+
+class _DopDataTableState extends State<_DopDataTable> {
+  final ScrollController horizontalScrollController = ScrollController();
+  final ScrollController verticalScrollController = ScrollController();
+
+  @override
+  void dispose() {
+    horizontalScrollController.dispose();
+    verticalScrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scrollbar(
+      controller: horizontalScrollController,
       thumbVisibility: true,
+      trackVisibility: true,
+      interactive: true,
+      scrollbarOrientation: ScrollbarOrientation.bottom,
       child: SingleChildScrollView(
+        controller: horizontalScrollController,
         scrollDirection: Axis.horizontal,
-        child: SingleChildScrollView(
-          child: DataTable(
-            headingRowColor: WidgetStateProperty.all(
-              const Color(0xFFF8FAFC),
-            ),
-            headingTextStyle: const TextStyle(
-              color: Color(0xFF334155),
-              fontWeight: FontWeight.bold,
-              fontSize: 12,
-            ),
-            dataTextStyle: const TextStyle(
-              color: Color(0xFF0F172A),
-              fontSize: 12,
-            ),
-            columnSpacing: 22,
-            horizontalMargin: 16,
-            columns: const [
-              DataColumn(label: Text('No. DOP')),
-              DataColumn(label: Text('Hari')),
-              DataColumn(label: Text('Tanggal')),
-              DataColumn(label: Text('Perusahaan')),
-              DataColumn(label: Text('Job Site')),
-              DataColumn(label: Text('Rencana Pekerjaan')),
-              DataColumn(label: Text('Jenis Unit')),
-              DataColumn(label: Text('No Lambung')),
-              DataColumn(label: Text('Mulai')),
-              DataColumn(label: Text('Akhir')),
-              DataColumn(label: Text('Nama')),
-              DataColumn(label: Text('SID')),
-              DataColumn(label: Text('Expired SID')),
-              DataColumn(label: Text('Expired SIMPER')),
-              DataColumn(label: Text('Rute')),
-              DataColumn(label: Text('Observer')),
-              DataColumn(label: Text('Kategori Kritis')),
-              DataColumn(label: Text('Tingkat Risiko')),
-              DataColumn(label: Text('Prosedur/JSA')),
-              DataColumn(label: Text('Shift')),
-              DataColumn(label: Text('Layer 1')),
-              DataColumn(label: Text('Layer 2')),
-              DataColumn(label: Text('Layer 3')),
-              DataColumn(label: Text('Layer 4')),
-              DataColumn(label: Text('RIC')),
-              DataColumn(label: Text('Area')),
-              DataColumn(label: Text('Perusahaan')),
-              DataColumn(label: Text('Status')),
-              DataColumn(label: Text('Dibuat Oleh')),
-              DataColumn(label: Text('Disetujui Oleh')),
-              DataColumn(label: Text('Diketahui Oleh')),
-            ],
-            rows: _buildRows(),
+        child: DataTable(
+          headingRowColor: WidgetStateProperty.all(
+            const Color(0xFFF8FAFC),
           ),
+          headingTextStyle: const TextStyle(
+            color: Color(0xFF334155),
+            fontWeight: FontWeight.bold,
+            fontSize: 12,
+          ),
+          dataTextStyle: const TextStyle(
+            color: Color(0xFF0F172A),
+            fontSize: 12,
+          ),
+          columnSpacing: 22,
+          horizontalMargin: 16,
+          columns: const [
+            DataColumn(label: Text('No. DOP')),
+            DataColumn(label: Text('Hari')),
+            DataColumn(label: Text('Tanggal')),
+            DataColumn(label: Text('Perusahaan')),
+            DataColumn(label: Text('Job Site')),
+            DataColumn(label: Text('Rencana Pekerjaan')),
+            DataColumn(label: Text('Jenis Unit')),
+            DataColumn(label: Text('No Lambung')),
+            DataColumn(label: Text('Mulai')),
+            DataColumn(label: Text('Akhir')),
+            DataColumn(label: Text('Nama')),
+            DataColumn(label: Text('SID')),
+            DataColumn(label: Text('Expired SID')),
+            DataColumn(label: Text('Expired SIMPER')),
+            DataColumn(label: Text('Rute')),
+            DataColumn(label: Text('Observer')),
+            DataColumn(label: Text('Kategori Kritis')),
+            DataColumn(label: Text('Tingkat Risiko')),
+            DataColumn(label: Text('Prosedur/JSA')),
+            DataColumn(label: Text('Shift')),
+            DataColumn(label: Text('Layer 1')),
+            DataColumn(label: Text('Layer 2')),
+            DataColumn(label: Text('Layer 3')),
+            DataColumn(label: Text('Layer 4')),
+            DataColumn(label: Text('RIC')),
+            DataColumn(label: Text('Area')),
+            DataColumn(label: Text('Perusahaan')),
+            DataColumn(label: Text('Status')),
+            DataColumn(label: Text('Dibuat Oleh')),
+            DataColumn(label: Text('Disetujui Oleh')),
+            DataColumn(label: Text('Diketahui Oleh')),
+          ],
+          rows: _buildRows(),
         ),
       ),
     );
@@ -458,7 +478,7 @@ class _DopDataTable extends StatelessWidget {
   List<DataRow> _buildRows() {
     final rows = <DataRow>[];
 
-    for (final item in items) {
+    for (final item in widget.items) {
       rows.add(
         DataRow(
           cells: [
