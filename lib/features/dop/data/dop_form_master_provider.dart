@@ -180,19 +180,59 @@ FutureProvider<List<Map<String, dynamic>>>((ref) async {
 });
 
 final employeeOptionsProvider =
-FutureProvider<List<Map<String, dynamic>>>((ref) async {
-  final supabase = ref.watch(supabaseProvider);
-  final companyAccess = await ref.watch(currentCompanyAccessProvider.future);
+FutureProvider<List<Map<String, dynamic>>>(
+      (ref) async {
+    final supabase = ref.watch(
+      supabaseProvider,
+    );
 
-  if (companyAccess == null) {
-    return <Map<String, dynamic>>[];
-  }
+    final companyAccess = await ref.watch(
+      currentCompanyAccessProvider.future,
+    );
 
-  final response = await supabase
-      .from('company_users')
-      .select('id, user_id, role, position, profiles(full_name, sid)')
-      .eq('company_id', companyAccess.companyId)
-      .eq('is_active', true);
+    if (companyAccess == null) {
+      return <Map<String, dynamic>>[];
+    }
 
-  return List<Map<String, dynamic>>.from(response);
-});
+    final response = await supabase
+        .from('company_users')
+        .select(
+      'id, '
+          'user_id, '
+          'role, '
+          'hierarchy_layer, '
+          'position, '
+          'department, '
+          'profiles(full_name, sid)',
+    )
+        .eq(
+      'company_id',
+      companyAccess.companyId,
+    )
+        .eq(
+      'is_active',
+      true,
+    )
+        .not(
+      'hierarchy_layer',
+      'is',
+      null,
+    )
+        .gte(
+      'hierarchy_layer',
+      1,
+    )
+        .lte(
+      'hierarchy_layer',
+      4,
+    )
+        .order(
+      'hierarchy_layer',
+      ascending: true,
+    );
+
+    return List<Map<String, dynamic>>.from(
+      response,
+    );
+  },
+);

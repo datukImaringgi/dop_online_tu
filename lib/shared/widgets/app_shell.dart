@@ -45,12 +45,52 @@ class AppShell extends ConsumerWidget {
     }
   }
 
-  Future<void> logout(BuildContext context, WidgetRef ref) async {
-    final supabase = ref.read(supabaseProvider);
-    await supabase.auth.signOut();
+  Future<void> logout(
+      BuildContext context,
+      WidgetRef ref,
+      ) async {
+    final supabase = ref.read(
+      supabaseProvider,
+    );
 
-    if (context.mounted) {
+    try {
+      await supabase.auth.signOut();
+
+      ref.invalidate(
+        currentProfileProvider,
+      );
+
+      ref.invalidate(
+        userCompaniesProvider,
+      );
+
+      ref.invalidate(
+        currentCompanyAccessProvider,
+      );
+
+      ref.invalidate(
+        currentHierarchyLayerProvider,
+      );
+
+      if (!context.mounted) {
+        return;
+      }
+
       context.go('/login');
+    } catch (error) {
+      if (!context.mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Gagal logout: $error',
+          ),
+          backgroundColor:
+          const Color(0xFFDC2626),
+        ),
+      );
     }
   }
 

@@ -555,6 +555,23 @@ class DopActivityForm extends StatelessWidget {
     );
   }
 
+  List<Map<String, dynamic>>
+  buildEmployeesByLayer(int layer) {
+    final filteredEmployees =
+    <Map<String, dynamic>>[];
+
+    for (final employee in employees) {
+      final hierarchyLayer =
+      employee['hierarchy_layer'];
+
+      if (hierarchyLayer == layer) {
+        filteredEmployees.add(employee);
+      }
+    }
+
+    return filteredEmployees;
+  }
+
   Widget buildLayers() {
     return LayoutBuilder(
       builder: buildLayerLayout,
@@ -609,7 +626,7 @@ class DopActivityForm extends StatelessWidget {
       label: 'Layer 1',
       hintText: 'Cari nama atau SID',
       controller: layer1Controller,
-      items: employees,
+      items: buildEmployeesByLayer(1),
       selectedId: selectedLayer1UserId,
       idKey: 'id',
       displayBuilder: buildEmployeeDisplay,
@@ -625,7 +642,7 @@ class DopActivityForm extends StatelessWidget {
       label: 'Layer 2',
       hintText: 'Cari nama atau SID',
       controller: layer2Controller,
-      items: employees,
+      items: buildEmployeesByLayer(2),
       selectedId: selectedLayer2UserId,
       idKey: 'id',
       displayBuilder: buildEmployeeDisplay,
@@ -641,7 +658,7 @@ class DopActivityForm extends StatelessWidget {
       label: 'Layer 3',
       hintText: 'Cari nama atau SID',
       controller: layer3Controller,
-      items: employees,
+      items: buildEmployeesByLayer(3),
       selectedId: selectedLayer3UserId,
       idKey: 'id',
       displayBuilder: buildEmployeeDisplay,
@@ -657,7 +674,7 @@ class DopActivityForm extends StatelessWidget {
       label: 'Layer 4',
       hintText: 'Cari nama atau SID',
       controller: layer4Controller,
-      items: employees,
+      items: buildEmployeesByLayer(4),
       selectedId: selectedLayer4UserId,
       idKey: 'id',
       displayBuilder: buildEmployeeDisplay,

@@ -411,12 +411,12 @@ class _FilterBar extends StatelessWidget {
   }
 
   static String _formatStatus(String status) {
-    if (status == 'pending_safety') {
-      return 'Pending Safety';
+    if (status == 'pending_layer_3') {
+      return 'Approval Layer 3';
     }
 
-    if (status == 'pending_pjo') {
-      return 'Pending PJO';
+    if (status == 'pending_layer_4') {
+      return 'Approval Layer 4';
     }
 
     if (status == 'approved') {
@@ -844,7 +844,7 @@ class _StatusBadge extends StatelessWidget {
       return const Color(0xFFEF4444);
     }
 
-    if (status == 'pending_safety' || status == 'pending_pjo') {
+    if (status == 'pending_layer_3' || status == 'pending_layer_4') {
       return const Color(0xFFF59E0B);
     }
 
@@ -860,12 +860,16 @@ class _StatusBadge extends StatelessWidget {
   }
 
   String _formatStatus(String status) {
-    if (status == 'pending_safety') {
-      return 'Pending Safety';
+    if (status == 'pending_layer_3') {
+      return 'Approval Layer 3';
     }
 
-    if (status == 'pending_pjo') {
-      return 'Pending PJO';
+    if (status == 'pending_layer_4') {
+      return 'Approval Layer 4';
+    }
+
+    if (status == 'revision_required') {
+      return 'Perlu Revisi';
     }
 
     if (status == 'approved') {

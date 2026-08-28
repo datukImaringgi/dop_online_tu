@@ -1,10 +1,9 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../shared/providers/supabase_provider.dart';
+import '../../../shared/providers/user_session_provider.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
@@ -35,6 +34,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   }
 
   Future<void> login() async {
+    if (isLoading) {
+      return;
+    }
+
     setState(() {
       isLoading = true;
       errorMessage = null;
@@ -44,12 +47,12 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       final sid = sidController.text.trim();
       final password = passwordController.text;
 
-      if(sid.isEmpty) {
-        throw 'SID wajib diisi';
+      if (sid.isEmpty) {
+        throw Exception('SID wajib diisi');
       }
 
-      if(password.isEmpty) {
-        throw 'password wajib diisi';
+      if (password.isEmpty) {
+        throw Exception('Password wajib diisi');
       }
 
       final internalEmail = buildInternalEmail(sid);
@@ -57,15 +60,38 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
       await supabase.auth.signInWithPassword(
         email: internalEmail,
-        password: passwordController.text,
+        password: password,
       );
 
-      if (mounted) {
-        context.go('/dashboard');
+      ref.invalidate(
+        currentProfileProvider,
+      );
+
+      ref.invalidate(
+        userCompaniesProvider,
+      );
+
+      ref.invalidate(
+        currentCompanyAccessProvider,
+      );
+
+      ref.invalidate(
+        currentHierarchyLayerProvider,
+      );
+
+      if (!mounted) {
+        return;
       }
+
+      context.go('/dashboard');
     } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
       setState(() {
-        errorMessage = 'login gagal. Periksa SID dan password.';
+        errorMessage =
+        'Login gagal. Periksa SID dan password.';
       });
     } finally {
       if (mounted) {
