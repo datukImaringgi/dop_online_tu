@@ -8,6 +8,9 @@ import '../features/dop/presentation/dop_list_page.dart';
 import '../features/dop/presentation/dop_request_page.dart';
 import '../features/master/presentation/master_page.dart';
 import '../shared/widgets/app_shell.dart';
+import '../features/approval/domain/dop_approval_list_item.dart';
+import '../features/approval/presentation/dop_approval_detail_page.dart';
+import '../features/dop/presentation/dop_revision_list_page.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -37,16 +40,43 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             }
           ),
           GoRoute(
+            path: '/dop-revisions',
+            builder: (context, state) {
+              return const DopRevisionListPage();
+            },
+          ),
+          GoRoute(
             path: '/dop-request',
             builder: (context, state) {
-              return const DopRequestPage();
-            }
+              final revisionDopHeaderId =
+              state.extra as String?;
+
+              return DopRequestPage(
+                revisionDopHeaderId:
+                revisionDopHeaderId,
+              );
+            },
           ),
           GoRoute(
             path: '/approval',
             builder: (context, state) {
               return const ApprovalPage();
             }
+          ),
+          GoRoute(
+            path: '/approval/review',
+            builder: (context, state) {
+              final approvalItem =
+              state.extra as DopApprovalListItem?;
+
+              if (approvalItem == null) {
+                return const ApprovalPage();
+              }
+
+              return DopApprovalDetailPage(
+                approvalItem: approvalItem,
+              );
+            },
           ),
           GoRoute(
             path: '/master',

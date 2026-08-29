@@ -12,12 +12,12 @@ InputDecoration buildCompactInputDecoration({
     floatingLabelBehavior: FloatingLabelBehavior.auto,
     contentPadding: const EdgeInsets.symmetric(
       horizontal: 12,
-      vertical: 13,
+      vertical: 11,
     ),
     suffixIcon: suffixIcon,
     suffixIconConstraints: const BoxConstraints(
-      minWidth: 42,
-      minHeight: 42,
+      minWidth: 40,
+      minHeight: 40,
     ),
     border: const OutlineInputBorder(),
     enabledBorder: const OutlineInputBorder(
@@ -77,6 +77,173 @@ class DopSectionCard extends StatelessWidget {
             ...children,
           ],
         ),
+      ),
+    );
+  }
+}
+
+class DopGridSectionCard extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  final List<Widget> children;
+  final Widget? footer;
+
+  const DopGridSectionCard({
+    super.key,
+    required this.title,
+    required this.icon,
+    required this.children,
+    this.footer,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: EdgeInsets.zero,
+      elevation: 0,
+      color: Colors.white,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: const BorderSide(
+          color: Color(0xFFE2E8F0),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          buildHeader(),
+          const Divider(
+            height: 1,
+            color: Color(0xFFE2E8F0),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: children,
+            ),
+          ),
+          if (footer != null) ...[
+            const Divider(
+              height: 1,
+              color: Color(0xFFE2E8F0),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
+              child: footer!,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 16,
+        vertical: 13,
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: const Color(0xFFEFF6FF),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              icon,
+              color: const Color(0xFF2563EB),
+              size: 18,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              title,
+              style: const TextStyle(
+                color: Color(0xFF0F172A),
+                fontSize: 16,
+                height: 1.1,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class DopFormGridRow extends StatelessWidget {
+  final List<Widget> children;
+  final List<int>? flexValues;
+  final double spacing;
+
+  const DopFormGridRow({
+    super.key,
+    required this.children,
+    this.flexValues,
+    this.spacing = 14,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final rowChildren = <Widget>[];
+
+    for (var index = 0;
+    index < children.length;
+    index++) {
+      var flex = 1;
+
+      if (flexValues != null &&
+          index < flexValues!.length) {
+        flex = flexValues![index];
+      }
+
+      rowChildren.add(
+        Expanded(
+          flex: flex,
+          child: children[index],
+        ),
+      );
+
+      if (index < children.length - 1) {
+        rowChildren.add(
+          SizedBox(width: spacing),
+        );
+      }
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: rowChildren,
+    );
+  }
+}
+
+class DopFormGridDivider extends StatelessWidget {
+  final double verticalPadding;
+
+  const DopFormGridDivider({
+    super.key,
+    this.verticalPadding = 14,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.symmetric(
+        vertical: verticalPadding,
+      ),
+      child: const Divider(
+        height: 1,
+        color: Color(0xFFE2E8F0),
       ),
     );
   }
@@ -249,35 +416,62 @@ class DopTimeField extends StatelessWidget {
   final String label;
   final String value;
   final VoidCallback onTap;
+  final bool isRequired;
 
   const DopTimeField({
     super.key,
     required this.label,
     required this.value,
     required this.onTap,
+    this.isRequired = false,
   });
+
+  String? validateTime(String? currentValue) {
+    if (!isRequired) {
+      return null;
+    }
+
+    if (currentValue == null ||
+        currentValue.isEmpty ||
+        currentValue == '-') {
+      return '$label wajib dipilih';
+    }
+
+    return null;
+  }
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(4),
-      child: InputDecorator(
-        decoration: buildCompactInputDecoration(
-          label: label,
-          suffixIcon: const Icon(
-            Icons.schedule_outlined,
-            size: 20,
-          ),
-        ),
-          child: Text(
-            value,
-            style: const TextStyle(
-              fontSize: 14,
-              color: Color(0xFF0F172A),
+    return FormField<String>(
+      initialValue: value,
+      validator: validateTime,
+      builder: (
+          FormFieldState<String> fieldState,
+          ) {
+        return InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(4),
+          child: InputDecorator(
+            isEmpty: value == '-',
+            decoration: buildCompactInputDecoration(
+              label: label,
+              suffixIcon: const Icon(
+                Icons.schedule_outlined,
+                size: 20,
+              ),
+            ).copyWith(
+              errorText: fieldState.errorText,
+            ),
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontSize: 13,
+                color: Color(0xFF0F172A),
+              ),
             ),
           ),
-      ),
+        );
+      },
     );
   }
 }

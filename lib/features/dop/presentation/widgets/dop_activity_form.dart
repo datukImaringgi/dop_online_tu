@@ -112,6 +112,14 @@ class DopActivityForm extends StatelessWidget {
     required this.onAddOrUpdate,
   });
 
+  String? validateObserver(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Observer wajib diisi';
+    }
+
+    return null;
+  }
+
   String _buildJsaLabel(Map<String, dynamic> item) {
     final code = item['procedure_code'] as String? ?? '-';
     final name = item['procedure_name'] as String? ?? '-';
@@ -296,41 +304,47 @@ class DopActivityForm extends StatelessWidget {
     return Column(
       children: [
         _buildActionButtons(),
-        DopSectionCard(
+        SizedBox(height: 6),
+        DopGridSectionCard(
           title: 'Detail Pekerjaan',
+          icon: Icons.assignment_outlined,
           children: [
             TextFormField(
               controller: workPlanController,
               style: const TextStyle(
-                fontSize: 14,
+                fontSize: 13,
                 color: Color(0xFF0F172A),
               ),
               decoration: buildCompactInputDecoration(
                 label: 'Rencana Pekerjaan',
+                hintText:
+                'Masukkan rencana pekerjaan',
               ),
               validator: _validateWorkPlan,
             ),
-            const SizedBox(height: 12),
+            const DopFormGridDivider(),
             _buildResponsiveActivityFields(),
           ],
         ),
         const SizedBox(height: 16),
-        DopSectionCard(
+        DopGridSectionCard(
           title: 'Layer & Catatan',
+          icon: Icons.account_tree_outlined,
           children: [
-            const SizedBox(height: 6),
             buildLayers(),
-            const SizedBox(height: 12),
+            const DopFormGridDivider(),
             TextFormField(
               controller: notesController,
               minLines: 2,
               maxLines: 3,
               style: const TextStyle(
-                fontSize: 14,
+                fontSize: 13,
                 color: Color(0xFF0F172A),
               ),
               decoration: buildCompactInputDecoration(
                 label: 'Catatan',
+                hintText:
+                'Tambahkan catatan jika diperlukan',
               ),
             ),
           ],
@@ -623,6 +637,7 @@ class DopActivityForm extends StatelessWidget {
 
   Widget buildLayer1Field() {
     return DopMasterAutocomplete(
+      isRequired: true,
       label: 'Layer 1',
       hintText: 'Cari nama atau SID',
       controller: layer1Controller,
@@ -639,6 +654,7 @@ class DopActivityForm extends StatelessWidget {
 
   Widget buildLayer2Field() {
     return DopMasterAutocomplete(
+      isRequired: true,
       label: 'Layer 2',
       hintText: 'Cari nama atau SID',
       controller: layer2Controller,
@@ -655,6 +671,7 @@ class DopActivityForm extends StatelessWidget {
 
   Widget buildLayer3Field() {
     return DopMasterAutocomplete(
+      isRequired: true,
       label: 'Layer 3',
       hintText: 'Cari nama atau SID',
       controller: layer3Controller,
@@ -671,6 +688,7 @@ class DopActivityForm extends StatelessWidget {
 
   Widget buildLayer4Field() {
     return DopMasterAutocomplete(
+      isRequired: true,
       label: 'Layer 4',
       hintText: 'Cari nama atau SID',
       controller: layer4Controller,
@@ -690,25 +708,66 @@ class DopActivityForm extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
         OutlinedButton.icon(
+          onPressed:
+          isSubmitting ? null : onClear,
           style: OutlinedButton.styleFrom(
-            backgroundColor: Colors.white
+            minimumSize: const Size(0, 40),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 9,
+            ),
+            foregroundColor:
+            const Color(0xFF475569),
+            backgroundColor: Colors.white,
+            side: const BorderSide(
+              color: Color(0xFFCBD5E1),
+            ),
+            textStyle: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
           ),
-          onPressed: isSubmitting ? null : onClear,
-          icon: const Icon(Icons.clear),
+          icon: const Icon(
+            Icons.clear,
+            size: 18,
+          ),
           label: const Text('Clear'),
         ),
         const SizedBox(width: 10),
         ElevatedButton.icon(
+          onPressed: isSubmitting
+              ? null
+              : onAddOrUpdate,
           style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.orangeAccent,
-              foregroundColor: Colors.black,
+            minimumSize: const Size(0, 40),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 18,
+              vertical: 9,
+            ),
+            backgroundColor:
+            const Color(0xFFFFB238),
+            foregroundColor:
+            const Color(0xFF172033),
+            elevation: 0,
+            textStyle: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius:
+              BorderRadius.circular(10),
+            ),
           ),
-          onPressed: isSubmitting ? null : onAddOrUpdate,
           icon: Icon(
-            isEditing ? Icons.save_outlined : Icons.add,
+            isEditing
+                ? Icons.save_outlined
+                : Icons.add,
+            size: 18,
           ),
           label: Text(
-            isEditing ? 'Update Aktivitas' : 'Tambah Aktivitas',
+            isEditing
+                ? 'Update Aktivitas'
+                : 'Tambah Aktivitas',
           ),
         ),
       ],
@@ -739,58 +798,38 @@ class DopActivityForm extends StatelessWidget {
   Widget _buildDesktopActivityFields() {
     return Column(
       children: [
-        Row(
+        DopFormGridRow(
           children: [
-            Expanded(
-              child: _buildAreaField(),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: _buildShiftField(),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: _buildUnitField(),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: _buildDriverField(),
-            ),
+            _buildAreaField(),
+            _buildShiftField(),
+            _buildUnitField(),
+            _buildDriverField(),
           ],
         ),
-        const SizedBox(height: 12),
-        Row(
+        const DopFormGridDivider(),
+        DopFormGridRow(
+          flexValues: const [
+            1,
+            1,
+            2,
+          ],
           children: [
-            Expanded(
-              child: _buildStartTimeField(),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: _buildEndTimeField(),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              flex: 2,
-              child: _buildRouteField(),
-            ),
+            _buildStartTimeField(),
+            _buildEndTimeField(),
+            _buildRouteField(),
           ],
         ),
-        const SizedBox(height: 12),
-        Row(
+        const DopFormGridDivider(),
+        DopFormGridRow(
+          flexValues: const [
+            1,
+            2,
+            2,
+          ],
           children: [
-            Expanded(
-              child: _buildObserverField(),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              flex: 2,
-              child: _buildJsaField(),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              flex: 2,
-              child: _buildRicField(),
-            ),
+            _buildObserverField(),
+            _buildJsaField(),
+            _buildRicField(),
           ],
         ),
       ],
@@ -875,7 +914,7 @@ class DopActivityForm extends StatelessWidget {
 
   Widget _buildAreaField() {
     return DopSimpleDropdown(
-      label: 'Area',
+      label: 'Lokasi Tujuan',
       value: selectedAreaType,
       items: const [
         DropdownMenuItem<String>(
@@ -948,6 +987,7 @@ class DopActivityForm extends StatelessWidget {
       label: 'Mulai',
       value: startTimeText,
       onTap: onStartTimeTap,
+      isRequired: true,
     );
   }
 
@@ -956,6 +996,7 @@ class DopActivityForm extends StatelessWidget {
       label: 'Akhir',
       value: endTimeText,
       onTap: onEndTimeTap,
+      isRequired: true,
     );
   }
 
@@ -978,6 +1019,7 @@ class DopActivityForm extends StatelessWidget {
       decoration: buildCompactInputDecoration(
         label: 'Observer',
       ),
+      validator: validateObserver,
     );
   }
 

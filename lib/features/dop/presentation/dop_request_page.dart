@@ -9,9 +9,21 @@ import 'widgets/dop_header_form.dart';
 import 'widgets/dop_activity_form.dart';
 import '../data/dop_list_provider.dart';
 import '../data/dop_submission_repository.dart';
+import '../domain/dop_revision_data.dart';
+import 'widgets/dop_revision_form_loader.dart';
 
 class DopRequestPage extends ConsumerStatefulWidget {
-  const DopRequestPage({super.key});
+  final String? revisionDopHeaderId;
+
+  const DopRequestPage({
+    super.key,
+    this.revisionDopHeaderId,
+  });
+
+  bool get isRevisionMode {
+    return revisionDopHeaderId != null &&
+        revisionDopHeaderId!.trim().isNotEmpty;
+  }
 
   @override
   ConsumerState<DopRequestPage> createState() {
@@ -34,6 +46,12 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
   final layer4Controller = TextEditingController();
 
   final List<DopActivityDraft> activityDrafts = <DopActivityDraft>[];
+
+  bool hasAppliedRevisionData = false;
+
+  String activeRevisionDopNumber = '';
+
+  int activeRevisionNumber = 0;
 
   DateTime selectedDate = DateTime.now().add(
     const Duration(days: 1),
@@ -189,11 +207,30 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
     return -1;
   }
 
+  String? normalizeSelectedId(
+      String? value,
+      ) {
+    if (value == null ||
+        value.trim().isEmpty) {
+      return null;
+    }
+
+    return value;
+  }
+
   int timeToMinutes(TimeOfDay time) {
     return (time.hour * 60) + time.minute;
   }
 
   bool isSubmitting = false;
+
+  bool get isRevisionMode {
+    return widget.isRevisionMode;
+  }
+
+  String? get revisionDopHeaderId {
+    return widget.revisionDopHeaderId;
+  }
 
   bool isActivityTimeValid() {
     if (startTime == null || endTime == null) {
@@ -435,6 +472,18 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
     }
   }
 
+  Future<void> handleMainSubmit() async {
+    if (isRevisionMode) {
+      showMessage(
+        'Data revisi belum selesai dimuat. '
+            'Submit ulang belum dapat dilakukan.',
+      );
+      return;
+    }
+
+    await submitDop();
+  }
+
   Future<bool> showSubmitConfirmation() async {
     final result = await showDialog<bool>(
       context: context,
@@ -557,6 +606,40 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
     layer4Controller.dispose();
 
     super.dispose();
+  }
+
+  void applyRevisionData(
+      DopRevisionData revisionData,
+      ) {
+    if (hasAppliedRevisionData) {
+      return;
+    }
+
+    setState(() {
+      selectedJobSiteId =
+          revisionData.jobSiteId;
+
+      selectedDate = DateTime(
+        revisionData.dopDate.year,
+        revisionData.dopDate.month,
+        revisionData.dopDate.day,
+      );
+
+      activeRevisionDopNumber =
+          revisionData.dopNumber;
+
+      activeRevisionNumber =
+          revisionData.revisionNumber;
+
+      activityDrafts
+        ..clear()
+        ..addAll(
+          revisionData.activities,
+        );
+
+      editingDraftId = null;
+      hasAppliedRevisionData = true;
+    });
   }
 
   void resetActivityFields() {
@@ -753,13 +836,25 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
       selectedAreaType = draft.areaType;
       selectedShift = draft.shift;
 
-      selectedUnitId = draft.unitId;
-      unitController.text = '${draft.unitNumber} (${draft.unitType})';
-      selectedDriverId = draft.driverId;
-      driverController.text = '${draft.driverName} - ${draft.sid ?? '-'}';
-      selectedRouteId = draft.routeId;
-      selectedJsaId = draft.jsaId;
-      selectedControlRoomId = draft.controlRoomId;
+      selectedUnitId = normalizeSelectedId(
+        draft.unitId,
+      );
+
+      selectedDriverId = normalizeSelectedId(
+        draft.driverId,
+      );
+
+      selectedRouteId = normalizeSelectedId(
+        draft.routeId,
+      );
+
+      selectedJsaId = normalizeSelectedId(
+        draft.jsaId,
+      );
+
+      selectedControlRoomId = normalizeSelectedId(
+        draft.controlRoomId,
+      );
 
       startTime = parseTimeOfDay(draft.startTime);
       endTime = parseTimeOfDay(draft.endTime);
@@ -841,6 +936,13 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
       jsaProcedures: jsaProcedures,
       controlRooms: controlRooms,
       employees: employees,
+    );
+  }
+
+  void showRevisionDateInformation() {
+    showMessage(
+      'Tanggal DOP tidak dapat diubah '
+          'pada proses revisi.',
     );
   }
 
@@ -1012,12 +1114,14 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Request Form DOP',
+                          isRevisionMode
+                              ? 'Revisi DOP'
+                              : 'Request Form DOP',
                           style: TextStyle(
                             fontSize: 28,
                             fontWeight: FontWeight.bold,
@@ -1028,8 +1132,14 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
                         SizedBox(height: 6),
 
                         Text(
-                          'Input Daily Operation Plan Transportasi',
-                          style: TextStyle(
+                          isRevisionMode
+                              ? activeRevisionDopNumber.isEmpty
+                              ? 'Menyiapkan data revisi DOP...'
+                              : '$activeRevisionDopNumber • '
+                              'Revisi ${activeRevisionNumber + 1}'
+                              : 'Input Daily Operation Plan '
+                              'Transportasi',
+                          style: const TextStyle(
                             color: Color(0xFF64748B),
                             fontSize: 14,
                           ),
@@ -1042,6 +1152,11 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
                     onPressed: isSubmitting
                         ? null
                         : () {
+                      if (isRevisionMode) {
+                        context.go('/dop-revisions');
+                        return;
+                      }
+
                       context.go('/dop-list');
                     },
                     icon: const Icon(Icons.arrow_back),
@@ -1051,9 +1166,13 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
                   const SizedBox(width: 10),
 
                   ElevatedButton.icon(
-                    onPressed: isSubmitting || activityDrafts.isEmpty
+                    onPressed:
+                    isSubmitting ||
+                        activityDrafts.isEmpty ||
+                        (isRevisionMode &&
+                            !hasAppliedRevisionData)
                         ? null
-                        : submitDop,
+                        : handleMainSubmit,
                     icon: isSubmitting
                         ? const SizedBox(
                           width: 16,
@@ -1065,8 +1184,14 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
                         : const Icon(Icons.send),
                     label: Text(
                       isSubmitting
-                          ? 'Submitting...'
-                          : 'Submit DOP (${activityDrafts.length})',
+                          ? isRevisionMode
+                          ? 'Mengirim Revisi...'
+                          : 'Submitting...'
+                          : isRevisionMode
+                          ? 'Submit Ulang Revisi '
+                          '(${activityDrafts.length})'
+                          : 'Submit DOP '
+                          '(${activityDrafts.length})',
                     ),
                   ),
                 ],
@@ -1076,12 +1201,27 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
                 child: SingleChildScrollView(
                   child: Column(
                     children: [
+                      if (isRevisionMode &&
+                          revisionDopHeaderId != null) ...[
+                        DopRevisionFormLoader(
+                          dopHeaderId:
+                          revisionDopHeaderId!,
+                          onRevisionLoaded:
+                          applyRevisionData,
+                        ),
+                        const SizedBox(height: 16),
+                      ],
                       DopHeaderForm(
-                        formattedDate: getFormattedHeaderDate(),
-                        onDateTap: pickDate,
-                        selectedJobSiteId: selectedJobSiteId,
+                        formattedDate:
+                          getFormattedHeaderDate(),
+                        onDateTap: isRevisionMode
+                            ? showRevisionDateInformation
+                            : pickDate,
+                        selectedJobSiteId:
+                        selectedJobSiteId,
                         jobSites: jobSites,
-                        onJobSiteChanged: handleJobSiteChanged,
+                        onJobSiteChanged:
+                        handleJobSiteChanged,
                       ),
 
                       const SizedBox(height: 16),

@@ -3,6 +3,9 @@ class DopListItemModel {
   final String detailId;
   final String dopHeaderId;
   final String companyId;
+  final String jobSiteId;
+  final String createdBy;
+  final int revisionNumber;
   final String companyName;
   final String companyCode;
 
@@ -47,6 +50,9 @@ class DopListItemModel {
     required this.detailId,
     required this.dopHeaderId,
     required this.companyId,
+    required this.jobSiteId,
+    required this.createdBy,
+    required this.revisionNumber,
     required this.companyName,
     required this.companyCode,
     required this.dayName,
@@ -86,6 +92,11 @@ class DopListItemModel {
       detailId: map['detail_id'] as String,
       dopHeaderId: map['dop_header_id'] as String,
       companyId: map['company_id'] as String,
+      jobSiteId: map['job_site_id'] as String? ?? '',
+      createdBy: map['created_by'] as String? ?? '',
+      revisionNumber: readInteger(
+        map['revision_number'],
+      ),
       companyName: map['company_name'] as String? ?? '-',
       companyCode: map['company_code'] as String? ?? '-',
       dayName: map['day_name'] as String? ?? '-',
@@ -118,5 +129,20 @@ class DopListItemModel {
       approvedByName: map['approved_by_name'] as String? ?? '-',
       knownByName: map['known_by_name'] as String? ?? '-',
     );
+  }
+  static int readInteger(dynamic value) {
+    if (value is int) {
+      return value;
+    }
+
+    if (value is num) {
+      return value.toInt();
+    }
+
+    if (value is String) {
+      return int.tryParse(value) ?? 0;
+    }
+
+    return 0;
   }
 }

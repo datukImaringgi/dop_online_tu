@@ -419,6 +419,10 @@ class _FilterBar extends StatelessWidget {
       return 'Approval Layer 4';
     }
 
+    if (status == 'revision_required') {
+      return 'Perlu Revisi';
+    }
+
     if (status == 'approved') {
       return 'Approved';
     }
@@ -844,7 +848,15 @@ class _StatusBadge extends StatelessWidget {
       return const Color(0xFFEF4444);
     }
 
-    if (status == 'pending_layer_3' || status == 'pending_layer_4') {
+    if (status == 'pending_layer_3') {
+      return const Color(0xFF470570);
+    }
+
+    if (status == 'pending_layer_4') {
+      return const Color(0xFF64748B);
+    }
+
+    if (status == 'revision_required') {
       return const Color(0xFFF59E0B);
     }
 
@@ -853,7 +865,7 @@ class _StatusBadge extends StatelessWidget {
     }
 
     if (status == 'cancelled') {
-      return const Color(0xFF64748B);
+      return const Color(0xFFEF4444);
     }
 
     return const Color(0xFF64748B);

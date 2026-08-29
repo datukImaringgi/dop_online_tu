@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../providers/supabase_provider.dart';
 import '../providers/user_session_provider.dart';
+import '../../features/approval/data/dop_approval_provider.dart';
+import '../../features/dop/data/dop_revision_list_provider.dart';
 
 class AppShell extends ConsumerWidget {
   final Widget child;
@@ -18,29 +20,51 @@ class AppShell extends ConsumerWidget {
       return 0;
     }
 
-    if (location.startsWith('/dop-list') || location.startsWith('/dop-request')) {
+    if (location.startsWith('/dop-list') ||
+        location.startsWith('/dop-request')) {
       return 1;
     }
 
-    if (location.startsWith('/approval')) {
+    if (location.startsWith('/dop-revisions')) {
       return 2;
     }
 
-    if (location.startsWith('/master')) {
+    if (location.startsWith('/approval')) {
       return 3;
+    }
+
+    if (location.startsWith('/master')) {
+      return 4;
     }
 
     return 0;
   }
 
-  void onMenuSelected(BuildContext context, int index) {
+  void onMenuSelected(
+      BuildContext context,
+      int index,
+      ) {
     if (index == 0) {
       context.go('/dashboard');
-    } else if (index == 1) {
+      return;
+    }
+
+    if (index == 1) {
       context.go('/dop-list');
-    } else if (index == 2) {
+      return;
+    }
+
+    if (index == 2) {
+      context.go('/dop-revisions');
+      return;
+    }
+
+    if (index == 3) {
       context.go('/approval');
-    } else if (index == 3) {
+      return;
+    }
+
+    if (index == 4) {
       context.go('/master');
     }
   }
@@ -101,6 +125,39 @@ class AppShell extends ConsumerWidget {
 
     final profileAsync = ref.watch(currentProfileProvider);
     final companyAccessAsync = ref.watch(currentCompanyAccessProvider);
+    final hierarchyAsync = ref.watch(
+      currentHierarchyLayerProvider,
+    );
+
+    final hierarchyLayer =
+        hierarchyAsync.asData?.value;
+
+    final canAccessAdministration =
+        hierarchyLayer != null &&
+            hierarchyLayer >= 3;
+    final pendingApprovalCountAsync = ref.watch(
+      pendingApprovalCountProvider,
+    );
+
+    final pendingApprovalCount =
+        pendingApprovalCountAsync.asData?.value ?? 0;
+
+    final pendingApprovalBadge =
+    pendingApprovalCount > 0
+        ? pendingApprovalCount.toString()
+        : null;
+
+    final revisionCountAsync = ref.watch(
+      dopRevisionCountProvider,
+    );
+
+    final revisionCount =
+        revisionCountAsync.asData?.value ?? 0;
+
+    final revisionBadge =
+    revisionCount > 0
+        ? revisionCount.toString()
+        : null;
 
     return Scaffold(
       body: Row(
@@ -219,22 +276,33 @@ class AppShell extends ConsumerWidget {
                           },
                         ),
                         _SidebarMenuItem(
-                          icon: Icons.fact_check_outlined,
-                          label: 'Approval',
+                          icon: Icons.edit_note_outlined,
+                          label: 'Revisi DOP',
                           isSelected: selectedIndex == 2,
-                          badgeText: '6',
+                          badgeText: revisionBadge,
                           onTap: () {
                             onMenuSelected(context, 2);
                           },
                         ),
-                        _SidebarMenuItem(
-                          icon: Icons.storage_outlined,
-                          label: 'Master Data',
-                          isSelected: selectedIndex == 3,
-                          onTap: () {
-                            onMenuSelected(context, 3);
-                          },
-                        ),
+                        if (canAccessAdministration)
+                          _SidebarMenuItem(
+                            icon: Icons.fact_check_outlined,
+                            label: 'Approval',
+                            isSelected: selectedIndex == 3,
+                            badgeText: pendingApprovalBadge,
+                            onTap: () {
+                              onMenuSelected(context, 3);
+                            },
+                          ),
+                        if (canAccessAdministration)
+                          _SidebarMenuItem(
+                            icon: Icons.storage_outlined,
+                            label: 'Master Data',
+                            isSelected: selectedIndex == 4,
+                            onTap: () {
+                              onMenuSelected(context, 4);
+                            },
+                          ),
                       ],
                     ),
                   ),
@@ -243,7 +311,10 @@ class AppShell extends ConsumerWidget {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 14),
                   child: Container(
-                    padding: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 13,
+                      ),
                     decoration: BoxDecoration(
                       color: const Color(0xFF0B3A68),
                       borderRadius: BorderRadius.circular(14),
@@ -274,23 +345,43 @@ class AppShell extends ConsumerWidget {
                         );
                       },
                       data: (profile) {
-                        return  companyAccessAsync.when(
+                        return companyAccessAsync.when(
                           loading: () {
                             return _UserCardContent(
-                              fullname: profile?.fullName ?? '-',
+                              fullName:
+                              profile?.fullName ?? '-',
+                              sid:
+                              profile?.sid ?? '-',
+                              hierarchyLayer: null,
                               position: 'Loading...',
+                              notificationEmail:
+                              profile?.notificationEmail ?? '-',
                             );
                           },
                           error: (error, stackTrace) {
                             return _UserCardContent(
-                              fullname: profile?.fullName ?? '-',
+                              fullName:
+                              profile?.fullName ?? '-',
+                              sid:
+                              profile?.sid ?? '-',
+                              hierarchyLayer: null,
                               position: '-',
+                              notificationEmail:
+                              profile?.notificationEmail ?? '-',
                             );
                           },
                           data: (companyAccess) {
                             return _UserCardContent(
-                              fullname: profile?.fullName ?? '-',
-                              position: companyAccess?.position ?? '-',
+                              fullName:
+                              profile?.fullName ?? '-',
+                              sid:
+                              profile?.sid ?? '-',
+                              hierarchyLayer:
+                              companyAccess?.hierarchyLayer,
+                              position:
+                              companyAccess?.position ?? '-',
+                              notificationEmail:
+                              profile?.notificationEmail ?? '-',
                             );
                           },
                         );
@@ -352,48 +443,107 @@ class AppShell extends ConsumerWidget {
 }
 
 class _UserCardContent extends StatelessWidget {
-  final String fullname;
+  final String fullName;
+  final String sid;
+  final int? hierarchyLayer;
   final String position;
+  final String notificationEmail;
 
-  const _UserCardContent ({
-    required this.fullname,
+  const _UserCardContent({
+    required this.fullName,
+    required this.sid,
+    required this.hierarchyLayer,
     required this.position,
+    required this.notificationEmail,
   });
+
+  String get identityText {
+    return '$fullName - $sid';
+  }
+
+  String get accessText {
+    final layerText = hierarchyLayer == null
+        ? 'Layer -'
+        : 'Layer $hierarchyLayer';
+
+    return '$layerText - $position';
+  }
 
   @override
   Widget build(BuildContext context) {
     return Row(
+      crossAxisAlignment:
+      CrossAxisAlignment.center,
       children: [
         const CircleAvatar(
-          radius: 20,
+          radius: 21,
           backgroundColor: Color(0xFFE8EEF5),
           child: Icon(
             Icons.person,
             color: Color(0xFF062B4F),
+            size: 23,
           ),
         ),
-        const SizedBox(width: 10,),
+        const SizedBox(width: 10),
         Expanded(
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment:
+            CrossAxisAlignment.start,
             children: [
-              Text(
-                fullname,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
+              Tooltip(
+                message: identityText,
+                child: Text(
+                  identityText,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12.5,
+                    height: 1.2,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
-              Text(
-                position,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  // ignore: deprecated_member_use
-                  color: Colors.white.withOpacity(0.75),
-                  fontSize: 12,
+              const SizedBox(height: 4),
+              Tooltip(
+                message: accessText,
+                child: Text(
+                  accessText,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Color(0xFFBFDBFE),
+                    fontSize: 11.5,
+                    height: 1.2,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Tooltip(
+                message: notificationEmail,
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.email_outlined,
+                      color: Color(0xFF93C5FD),
+                      size: 13,
+                    ),
+                    const SizedBox(width: 5),
+                    Expanded(
+                      child: Text(
+                        notificationEmail,
+                        maxLines: 1,
+                        overflow:
+                        TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Color(0xFFCBD5E1),
+                          fontSize: 10.5,
+                          height: 1.2,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
