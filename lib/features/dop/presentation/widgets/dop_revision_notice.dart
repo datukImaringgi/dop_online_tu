@@ -16,14 +16,13 @@ class DopRevisionNotice extends StatelessWidget {
       width: double.infinity,
       decoration: BoxDecoration(
         color: const Color(0xFFFFFBEB),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: const Color(0xFFFDE68A),
         ),
       ),
       child: Column(
-        crossAxisAlignment:
-        CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           buildHeader(),
           const Divider(
@@ -39,27 +38,28 @@ class DopRevisionNotice extends StatelessWidget {
   Widget buildHeader() {
     return Padding(
       padding: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 12,
+        horizontal: 12,
+        vertical: 8,
       ),
       child: Row(
         children: [
           Container(
-            width: 34,
-            height: 34,
+            width: 26,
+            height: 26,
             decoration: BoxDecoration(
               color: const Color(0xFFFEF3C7),
-              borderRadius: BorderRadius.circular(9),
+              borderRadius: BorderRadius.circular(7),
             ),
             child: const Icon(
               Icons.assignment_return_outlined,
               color: Color(0xFFB45309),
-              size: 19,
+              size: 15,
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 8),
           Expanded(
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment:
               CrossAxisAlignment.start,
               children: [
@@ -67,25 +67,27 @@ class DopRevisionNotice extends StatelessWidget {
                   'DOP Dikembalikan untuk Revisi',
                   style: TextStyle(
                     color: Color(0xFF92400E),
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                    height: 1.1,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(height: 3),
+                const SizedBox(height: 2),
                 Text(
                   buildDocumentInformation(),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: Color(0xFFB45309),
-                    fontSize: 11.5,
+                    fontSize: 10,
+                    height: 1.1,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 8),
           buildRevisionBadge(),
         ],
       ),
@@ -95,46 +97,45 @@ class DopRevisionNotice extends StatelessWidget {
   Widget buildRevisionNote() {
     return Padding(
       padding: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 13,
+        horizontal: 12,
+        vertical: 8,
       ),
       child: Row(
-        crossAxisAlignment:
-        CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(
-            width: 34,
+            width: 26,
             child: Icon(
               Icons.notes_outlined,
               color: Color(0xFFD97706),
-              size: 18,
+              size: 15,
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 8),
           Expanded(
-            child: Column(
-              crossAxisAlignment:
-              CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Catatan dari Approver',
-                  style: TextStyle(
-                    color: Color(0xFF92400E),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                  ),
+            child: RichText(
+              text: TextSpan(
+                style: const TextStyle(
+                  color: Color(0xFF78350F),
+                  fontSize: 11,
+                  height: 1.3,
                 ),
-                const SizedBox(height: 5),
-                Text(
-                  revisionData.revisionNote,
-                  style: const TextStyle(
-                    color: Color(0xFF78350F),
-                    fontSize: 13,
-                    height: 1.35,
-                    fontWeight: FontWeight.w600,
+                children: [
+                  const TextSpan(
+                    text: 'Catatan Approver: ',
+                    style: TextStyle(
+                      color: Color(0xFF92400E),
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
-                ),
-              ],
+                  TextSpan(
+                    text: revisionData.revisionNote,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -144,24 +145,25 @@ class DopRevisionNotice extends StatelessWidget {
 
   Widget buildRevisionBadge() {
     return Container(
-        padding: const EdgeInsets.symmetric(
-        horizontal: 10,
-        vertical: 5,
-        ),
+      padding: const EdgeInsets.symmetric(
+        horizontal: 8,
+        vertical: 4,
+      ),
       decoration: BoxDecoration(
         color: const Color(0xFFFFF7ED),
         borderRadius: BorderRadius.circular(999),
         border: Border.all(
-        color: const Color(0xFFFDBA74),
+          color: const Color(0xFFFDBA74),
         ),
       ),
       child: Text(
         revisionLabel,
-        maxLines: 1, 
+        maxLines: 1,
         style: const TextStyle(
           color: Color(0xFFC2410C),
-          fontSize: 10.5,
-          fontWeight: FontWeight.bold,
+          fontSize: 9.5,
+          height: 1,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );

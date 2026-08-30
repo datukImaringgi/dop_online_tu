@@ -24,18 +24,18 @@ class DopActivityTable extends StatelessWidget {
       elevation: 0,
       color: Colors.white,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         side: const BorderSide(
           color: Color(0xFFE2E8F0),
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildHeader(),
-            const SizedBox(height: 16),
+            const SizedBox(height: 10),
             _buildContent(),
           ],
         ),
@@ -54,16 +54,16 @@ class DopActivityTable extends StatelessWidget {
                 'Daftar Aktivitas Kendaraan',
                 style: TextStyle(
                   color: Color(0xFF0F172A),
-                  fontSize: 17,
+                  fontSize: 13,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              SizedBox(height: 4),
+              SizedBox(height: 2),
               Text(
                 'Review seluruh aktivitas sebelum Submit DOP.',
                 style: TextStyle(
                   color: Color(0xFF64748B),
-                  fontSize: 13,
+                  fontSize: 10.5,
                 ),
               ),
             ],
@@ -102,8 +102,8 @@ class _DraftCountBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: 12,
-        vertical: 7,
+        horizontal: 8,
+        vertical: 4,
       ),
       decoration: BoxDecoration(
         color: const Color(0xFF0D6EFD).withValues(
@@ -115,7 +115,7 @@ class _DraftCountBadge extends StatelessWidget {
         '$count Aktivitas',
         style: const TextStyle(
           color: Color(0xFF0D6EFD),
-          fontSize: 12,
+          fontSize: 9.5,
           fontWeight: FontWeight.bold,
         ),
       ),
@@ -131,12 +131,12 @@ class _EmptyDraftState extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(
-        horizontal: 20,
-        vertical: 28,
+        horizontal: 14,
+        vertical: 18,
       ),
       decoration: BoxDecoration(
         color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: const Color(0xFFE2E8F0),
         ),
@@ -145,15 +145,15 @@ class _EmptyDraftState extends StatelessWidget {
         children: [
           Icon(
             Icons.local_shipping_outlined,
-            size: 34,
+            size: 26,
             color: Color(0xFF94A3B8),
           ),
-          SizedBox(height: 10),
+          SizedBox(height: 6),
           Text(
             'Belum ada aktivitas kendaraan',
             style: TextStyle(
               color: Color(0xFF334155),
-              fontSize: 14,
+              fontSize: 11.5,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -162,7 +162,7 @@ class _EmptyDraftState extends StatelessWidget {
             'Isi form aktivitas, lalu klik Tambah Aktivitas.',
             style: TextStyle(
               color: Color(0xFF64748B),
-              fontSize: 12,
+              fontSize: 10,
             ),
           ),
         ],
@@ -193,20 +193,26 @@ class _ActivityDataTable extends StatelessWidget {
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: DataTable(
+          headingRowHeight: 34,
+          dataRowMinHeight: 38,
+          dataRowMaxHeight: 38,
           headingRowColor: WidgetStateProperty.all(
             const Color(0xFFF8FAFC),
           ),
           headingTextStyle: const TextStyle(
             color: Color(0xFF334155),
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
+            fontSize: 10.5,
+            height: 1,
+            fontWeight: FontWeight.w700,
           ),
           dataTextStyle: const TextStyle(
             color: Color(0xFF0F172A),
-            fontSize: 12,
+            fontSize: 10.5,
+            height: 1.1,
           ),
-          horizontalMargin: 12,
-          columnSpacing: 20,
+          dividerThickness: 0.7,
+          horizontalMargin: 8,
+          columnSpacing: 14,
           columns: const [
             DataColumn(label: Text('No')),
             DataColumn(label: Text('Action')),
@@ -318,35 +324,53 @@ class _DraftActionButtons extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        IconButton(
-          onPressed: _handleEdit,
+        _buildActionButton(
           tooltip: 'Edit aktivitas',
-          icon: const Icon(
-            Icons.edit_outlined,
-            size: 20,
-            color: Color(0xFF0D6EFD),
-          ),
+          icon: Icons.edit_outlined,
+          color: const Color(0xFF0D6EFD),
+          onPressed: _handleEdit,
         ),
-        IconButton(
-          onPressed: _handleDuplicate,
+        _buildActionButton(
           tooltip: 'Duplikat aktivitas',
-          visualDensity: VisualDensity.compact,
-          icon: const Icon(
-            Icons.copy_outlined,
-            size: 19,
-            color: Color(0xFF7C3AED),
-          ),
+          icon: Icons.copy_outlined,
+          color: const Color(0xFF7C3AED),
+          onPressed: _handleDuplicate,
         ),
-        IconButton(
-          onPressed: _handleDelete,
+        _buildActionButton(
           tooltip: 'Hapus aktivitas',
-          icon: const Icon(
-            Icons.delete_outline,
-            size: 20,
-            color: Color(0xFFEF4444),
-          ),
+          icon: Icons.delete_outline,
+          color: const Color(0xFFEF4444),
+          onPressed: _handleDelete,
         ),
       ],
+    );
+  }
+
+  Widget _buildActionButton({
+    required String tooltip,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onPressed,
+  }) {
+    return SizedBox(
+      width: 28,
+      height: 28,
+      child: IconButton(
+        onPressed: onPressed,
+        tooltip: tooltip,
+        padding: EdgeInsets.zero,
+        constraints: const BoxConstraints(
+          minWidth: 28,
+          minHeight: 28,
+        ),
+        visualDensity: VisualDensity.compact,
+        splashRadius: 14,
+        icon: Icon(
+          icon,
+          size: 16,
+          color: color,
+        ),
+      ),
     );
   }
 }

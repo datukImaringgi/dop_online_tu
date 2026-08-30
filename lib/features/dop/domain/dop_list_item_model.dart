@@ -6,6 +6,7 @@ class DopListItemModel {
   final String jobSiteId;
   final String createdBy;
   final int revisionNumber;
+  final DateTime? submittedAt;
   final String companyName;
   final String companyCode;
 
@@ -53,6 +54,7 @@ class DopListItemModel {
     required this.jobSiteId,
     required this.createdBy,
     required this.revisionNumber,
+    required this.submittedAt,
     required this.companyName,
     required this.companyCode,
     required this.dayName,
@@ -96,6 +98,9 @@ class DopListItemModel {
       createdBy: map['created_by'] as String? ?? '',
       revisionNumber: readInteger(
         map['revision_number'],
+      ),
+      submittedAt: readDateTime(
+        map['submitted_at'],
       ),
       companyName: map['company_name'] as String? ?? '-',
       companyCode: map['company_code'] as String? ?? '-',
@@ -144,5 +149,19 @@ class DopListItemModel {
     }
 
     return 0;
+  }
+
+  static DateTime? readDateTime(dynamic value) {
+    if (value == null) {
+      return null;
+    }
+
+    final text = value.toString().trim();
+
+    if (text.isEmpty) {
+      return null;
+    }
+
+    return DateTime.tryParse(text);
   }
 }

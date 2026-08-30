@@ -304,7 +304,7 @@ class DopActivityForm extends StatelessWidget {
     return Column(
       children: [
         _buildActionButtons(),
-        SizedBox(height: 6),
+        const SizedBox(height: 6),
         DopGridSectionCard(
           title: 'Detail Pekerjaan',
           icon: Icons.assignment_outlined,
@@ -312,7 +312,7 @@ class DopActivityForm extends StatelessWidget {
             TextFormField(
               controller: workPlanController,
               style: const TextStyle(
-                fontSize: 13,
+                fontSize: 12.5,
                 color: Color(0xFF0F172A),
               ),
               decoration: buildCompactInputDecoration(
@@ -326,7 +326,7 @@ class DopActivityForm extends StatelessWidget {
             _buildResponsiveActivityFields(),
           ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
         DopGridSectionCard(
           title: 'Layer & Catatan',
           icon: Icons.account_tree_outlined,
@@ -338,7 +338,7 @@ class DopActivityForm extends StatelessWidget {
               minLines: 2,
               maxLines: 3,
               style: const TextStyle(
-                fontSize: 13,
+                fontSize: 12.5,
                 color: Color(0xFF0F172A),
               ),
               decoration: buildCompactInputDecoration(
@@ -368,27 +368,27 @@ class DopActivityForm extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.symmetric(
-        horizontal: 14,
-        vertical: 10,
+        horizontal: 10,
+        vertical: 7,
       ),
       child: Row(
         children: [
           Container(
-            width: 38,
-            height: 38,
+            width: 30,
+            height: 30,
             decoration: BoxDecoration(
               color: const Color(0xFF0D6EFD).withValues(
                 alpha: 0.10,
               ),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(8),
             ),
             child: const Icon(
               Icons.local_shipping_outlined,
               color: Color(0xFF0D6EFD),
-              size: 21,
+              size: 16,
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 9),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -397,7 +397,7 @@ class DopActivityForm extends StatelessWidget {
                   unitNumber,
                   style: const TextStyle(
                     color: Color(0xFF0F172A),
-                    fontSize: 13,
+                    fontSize: 11.5,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -408,7 +408,7 @@ class DopActivityForm extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: Color(0xFF64748B),
-                    fontSize: 12,
+                    fontSize: 10.5,
                   ),
                 ),
               ],
@@ -437,27 +437,27 @@ class DopActivityForm extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.symmetric(
-        horizontal: 14,
-        vertical: 10,
+        horizontal: 10,
+        vertical: 7,
       ),
       child: Row(
         children: [
           Container(
-            width: 38,
-            height: 38,
+            width: 30,
+            height: 30,
             decoration: BoxDecoration(
               color: const Color(0xFF10B981).withValues(
                 alpha: 0.10,
               ),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(8),
             ),
             child: const Icon(
               Icons.person_outline,
               color: Color(0xFF10B981),
-              size: 21,
+              size: 16,
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 9),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -466,7 +466,7 @@ class DopActivityForm extends StatelessWidget {
                   driverName,
                   style: const TextStyle(
                     color: Color(0xFF0F172A),
-                    fontSize: 13,
+                    fontSize: 11.5,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -475,7 +475,7 @@ class DopActivityForm extends StatelessWidget {
                   'SID $sid',
                   style: const TextStyle(
                     color: Color(0xFF475569),
-                    fontSize: 12,
+                    fontSize: 10.5,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -487,7 +487,7 @@ class DopActivityForm extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: Color(0xFF64748B),
-                    fontSize: 11,
+                    fontSize: 9.5,
                   ),
                 ),
               ],
@@ -516,27 +516,27 @@ class DopActivityForm extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.symmetric(
-        horizontal: 14,
-        vertical: 10,
+        horizontal: 10,
+        vertical: 7,
       ),
       child: Row(
         children: [
           Container(
-            width: 38,
-            height: 38,
+            width: 30,
+            height: 30,
             decoration: BoxDecoration(
               color: const Color(0xFF7C3AED).withValues(
                 alpha: 0.10,
               ),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(8),
             ),
             child: const Icon(
               Icons.person_search_outlined,
               color: Color(0xFF7C3AED),
-              size: 21,
+              size: 16,
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 9),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -547,7 +547,7 @@ class DopActivityForm extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: Color(0xFF0F172A),
-                    fontSize: 13,
+                    fontSize: 11.5,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -558,7 +558,7 @@ class DopActivityForm extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: Color(0xFF64748B),
-                    fontSize: 12,
+                    fontSize: 10.5,
                   ),
                 ),
               ],
@@ -596,8 +596,8 @@ class DopActivityForm extends StatelessWidget {
       BuildContext context,
       BoxConstraints constraints,
       ) {
-    const spacing = 14.0;
-    const minimumFieldWidth = 210.0;
+    const spacing = 10.0;
+    const minimumFieldWidth = 190.0;
 
     var fieldWidth =
         (constraints.maxWidth - (spacing * 3)) / 4;
@@ -613,7 +613,7 @@ class DopActivityForm extends StatelessWidget {
 
     return Wrap(
       spacing: spacing,
-      runSpacing: 14,
+      runSpacing: 10,
       children: [
         SizedBox(
           width: fieldWidth,
@@ -708,13 +708,14 @@ class DopActivityForm extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
         OutlinedButton.icon(
-          onPressed:
-          isSubmitting ? null : onClear,
+          onPressed: isSubmitting
+              ? null
+              : onClear,
           style: OutlinedButton.styleFrom(
-            minimumSize: const Size(0, 40),
+            minimumSize: const Size(0, 36),
             padding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 9,
+              horizontal: 12,
+              vertical: 7,
             ),
             foregroundColor:
             const Color(0xFF475569),
@@ -723,26 +724,30 @@ class DopActivityForm extends StatelessWidget {
               color: Color(0xFFCBD5E1),
             ),
             textStyle: const TextStyle(
-              fontSize: 13,
+              fontSize: 11.5,
+              height: 1,
               fontWeight: FontWeight.w600,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
             ),
           ),
           icon: const Icon(
             Icons.clear,
-            size: 18,
+            size: 16,
           ),
           label: const Text('Clear'),
         ),
-        const SizedBox(width: 10),
+        const SizedBox(width: 8),
         ElevatedButton.icon(
           onPressed: isSubmitting
               ? null
               : onAddOrUpdate,
           style: ElevatedButton.styleFrom(
-            minimumSize: const Size(0, 40),
+            minimumSize: const Size(0, 36),
             padding: const EdgeInsets.symmetric(
-              horizontal: 18,
-              vertical: 9,
+              horizontal: 13,
+              vertical: 7,
             ),
             backgroundColor:
             const Color(0xFFFFB238),
@@ -750,19 +755,19 @@ class DopActivityForm extends StatelessWidget {
             const Color(0xFF172033),
             elevation: 0,
             textStyle: const TextStyle(
-              fontSize: 13,
+              fontSize: 11.5,
+              height: 1,
               fontWeight: FontWeight.w700,
             ),
             shape: RoundedRectangleBorder(
-              borderRadius:
-              BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(8),
             ),
           ),
           icon: Icon(
             isEditing
                 ? Icons.save_outlined
                 : Icons.add,
-            size: 18,
+            size: 16,
           ),
           label: Text(
             isEditing
@@ -844,43 +849,43 @@ class DopActivityForm extends StatelessWidget {
             Expanded(
               child: _buildAreaField(),
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: 10),
             Expanded(
               child: _buildShiftField(),
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         Row(
           children: [
             Expanded(
               child: _buildUnitField(),
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: 10),
             Expanded(
               child: _buildDriverField(),
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         Row(
           children: [
             Expanded(
               child: _buildStartTimeField(),
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: 10),
             Expanded(
               child: _buildEndTimeField(),
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         _buildRouteField(),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         _buildObserverField(),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         _buildJsaField(),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         _buildRicField(),
       ],
     );
@@ -890,23 +895,23 @@ class DopActivityForm extends StatelessWidget {
     return Column(
       children: [
         _buildAreaField(),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         _buildShiftField(),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         _buildUnitField(),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         _buildDriverField(),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         _buildStartTimeField(),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         _buildEndTimeField(),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         _buildRouteField(),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         _buildObserverField(),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         _buildJsaField(),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         _buildRicField(),
       ],
     );
@@ -1013,7 +1018,7 @@ class DopActivityForm extends StatelessWidget {
     return TextFormField(
       controller: observerController,
       style: const TextStyle(
-        fontSize: 14,
+        fontSize: 12.5,
         color: Color(0xFF0F172A),
       ),
       decoration: buildCompactInputDecoration(

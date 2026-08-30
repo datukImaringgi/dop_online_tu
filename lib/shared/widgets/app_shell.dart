@@ -163,19 +163,19 @@ class AppShell extends ConsumerWidget {
       body: Row(
         children: [
           Container(
-            width: 260,
+            width: 224,
             color: const Color(0xFF062B4F),
             child: Column(
               children: [
-                const SizedBox(height: 28),
+                const SizedBox(height: 18),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 22),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Row(
                     children: [
                       Container(
-                        height: 46,
+                        height: 36,
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
+                          horizontal: 11,
                         ),
                         alignment: Alignment.center,
                         color: const Color(0xFFFFC928),
@@ -184,14 +184,14 @@ class AppShell extends ConsumerWidget {
                           style: TextStyle(
                             color: Colors.black,
                             fontWeight: FontWeight.bold,
-                            fontSize: 19,
+                            fontSize: 15,
                           ),
                         ),
                       ),
                       Container(
-                        height: 48,
+                        height: 36,
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
+                          horizontal: 8,
                         ),
                         alignment: Alignment.center,
                         color: Colors.black,
@@ -200,16 +200,16 @@ class AppShell extends ConsumerWidget {
                           style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
-                            fontSize: 14,
+                            fontSize: 11,
                           ),
                         ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 10),
                 Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 22),
+                  padding: EdgeInsets.symmetric(horizontal: 16),
                   child: Align(
                     alignment: Alignment.centerLeft,
                     child: companyAccessAsync.when(
@@ -220,7 +220,7 @@ class AppShell extends ConsumerWidget {
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 15,
+                            fontSize: 12.5,
                             fontWeight: FontWeight.w700,
                           ),
                         );
@@ -252,11 +252,11 @@ class AppShell extends ConsumerWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: 28),
+                const SizedBox(height: 18),
 
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
                     child: Column(
                       children: [
                         _SidebarMenuItem(
@@ -309,15 +309,15 @@ class AppShell extends ConsumerWidget {
                 ),
 
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
                   child: Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 13,
+                        horizontal: 10,
+                        vertical: 10,
                       ),
                     decoration: BoxDecoration(
                       color: const Color(0xFF0B3A68),
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(10),
                       border: Border.all(
                         // ignore: deprecated_member_use
                         color: Colors.white.withOpacity(0.12),
@@ -393,28 +393,29 @@ class AppShell extends ConsumerWidget {
                 const SizedBox(height: 10),
 
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
                   child: InkWell(
                     onTap: () {
                       logout(context, ref);
                     },
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(8),
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 12,
+                        horizontal: 10,
+                        vertical: 9,
                       ),
                       child: const Row(
                         children: [
                           Icon(
                             Icons.logout,
                             color: Colors.white,
-                            size: 20,
+                            size: 17,
                           ),
-                          SizedBox(width: 12),
+                          SizedBox(width: 10),
                           Text(
                             'Log Out',
                             style: TextStyle(
+                              fontSize: 12.5,
                               color: Colors.white,
                               fontWeight: FontWeight.w600,
                             ),
@@ -425,7 +426,7 @@ class AppShell extends ConsumerWidget {
                   ),
                 ),
 
-                const SizedBox(height: 18),
+                const SizedBox(height: 12),
               ],
             ),
           ),
@@ -476,15 +477,15 @@ class _UserCardContent extends StatelessWidget {
       CrossAxisAlignment.center,
       children: [
         const CircleAvatar(
-          radius: 21,
+          radius: 17,
           backgroundColor: Color(0xFFE8EEF5),
           child: Icon(
             Icons.person,
             color: Color(0xFF062B4F),
-            size: 23,
+            size: 18,
           ),
         ),
-        const SizedBox(width: 10),
+        const SizedBox(width: 8),
         Expanded(
           child: Column(
             crossAxisAlignment:
@@ -498,13 +499,13 @@ class _UserCardContent extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 12.5,
+                    fontSize: 11.5,
                     height: 1.2,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 3),
               Tooltip(
                 message: accessText,
                 child: Text(
@@ -513,13 +514,13 @@ class _UserCardContent extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: Color(0xFFBFDBFE),
-                    fontSize: 11.5,
+                    fontSize: 10.5,
                     height: 1.2,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 3),
               Tooltip(
                 message: notificationEmail,
                 child: Row(
@@ -527,9 +528,9 @@ class _UserCardContent extends StatelessWidget {
                     const Icon(
                       Icons.email_outlined,
                       color: Color(0xFF93C5FD),
-                      size: 13,
+                      size: 11,
                     ),
-                    const SizedBox(width: 5),
+                    const SizedBox(width: 4),
                     Expanded(
                       child: Text(
                         notificationEmail,
@@ -538,7 +539,7 @@ class _UserCardContent extends StatelessWidget {
                         TextOverflow.ellipsis,
                         style: const TextStyle(
                           color: Color(0xFFCBD5E1),
-                          fontSize: 10.5,
+                          fontSize: 9.5,
                           height: 1.2,
                         ),
                       ),
@@ -572,53 +573,68 @@ class _SidebarMenuItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+      padding: const EdgeInsets.symmetric(
+        vertical: 2,
+      ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(8),
         child: Container(
-          height: 46,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
+          height: 38,
+          padding: const EdgeInsets.symmetric(
+            horizontal: 10,
+          ),
           decoration: BoxDecoration(
             color: isSelected
                 ? const Color(0xFF0D6EFD)
                 : Colors.transparent,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(8),
           ),
           child: Row(
             children: [
               Icon(
                 icon,
-                color: Colors.white,
-                size: 20,
+                color: isSelected
+                    ? Colors.white
+                    : const Color(0xFFCBD5E1),
+                size: 18,
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                    fontSize: 14,
+                    color: isSelected
+                        ? Colors.white
+                        : const Color(0xFFE2E8F0),
+                    fontSize: 12.5,
+                    height: 1.1,
+                    fontWeight: isSelected
+                        ? FontWeight.w700
+                        : FontWeight.w500,
                   ),
                 ),
               ),
               if (badgeText != null)
                 Container(
-                  width: 22,
-                  height: 22,
+                  width: 18,
+                  height: 18,
+                  alignment: Alignment.center,
                   decoration: const BoxDecoration(
                     color: Color(0xFFFF3B4E),
                     shape: BoxShape.circle,
                   ),
-                  child: Center(
-                    child: Text(
-                      badgeText!,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                      ),
+                  child: Text(
+                    badgeText!,
+                    maxLines: 1,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 9,
+                      height: 1,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),

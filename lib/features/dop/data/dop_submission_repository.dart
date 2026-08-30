@@ -60,6 +60,55 @@ class DopSubmissionRepository {
     return DopSubmissionResult.fromMap(resultMap);
   }
 
+  Future<DopSubmissionResult> resubmitRevision({
+    required String dopHeaderId,
+    required String jobSiteId,
+    required DateTime dopDate,
+    required String dayName,
+    required List<DopActivityDraft> activities,
+  }) async {
+    if (dopHeaderId.trim().isEmpty) {
+      throw Exception('DOP revisi tidak valid');
+    }
+
+    if (jobSiteId.trim().isEmpty) {
+      throw Exception('Job Site wajib dipilih');
+    }
+
+    if (activities.isEmpty) {
+      throw Exception(
+        'Minimal satu aktivitas kendaraan wajib ditambahkan',
+      );
+    }
+
+    final activityPayloads =
+    <Map<String, dynamic>>[];
+
+    for (final activity in activities) {
+      activityPayloads.add(
+        activity.toSubmissionPayload(),
+      );
+    }
+
+    final response = await supabase.rpc(
+      'resubmit_dop_revision',
+      params: {
+        'p_dop_header_id': dopHeaderId,
+        'p_job_site_id': jobSiteId,
+        'p_dop_date': formatDate(dopDate),
+        'p_day_name': dayName,
+        'p_activities': activityPayloads,
+      },
+    );
+
+    final resultMap =
+    extractResultMap(response);
+
+    return DopSubmissionResult.fromMap(
+      resultMap,
+    );
+  }
+
   Map<String, dynamic> extractResultMap(dynamic response) {
     if (response is List) {
       if (response.isEmpty) {

@@ -11,6 +11,8 @@ import '../data/dop_list_provider.dart';
 import '../data/dop_submission_repository.dart';
 import '../domain/dop_revision_data.dart';
 import 'widgets/dop_revision_form_loader.dart';
+import '../data/dop_revision_list_provider.dart';
+import '../../approval/data/dop_approval_provider.dart';
 
 class DopRequestPage extends ConsumerStatefulWidget {
   final String? revisionDopHeaderId;
@@ -473,15 +475,151 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
   }
 
   Future<void> handleMainSubmit() async {
-    if (isRevisionMode) {
+    if (!isRevisionMode) {
+      await submitDop();
+      return;
+    }
+
+    await submitRevision();
+  }
+
+  Future<void> submitRevision() async {
+    if (isSubmitting) {
+      return;
+    }
+
+    if (!hasAppliedRevisionData ||
+        revisionDopHeaderId == null) {
       showMessage(
-        'Data revisi belum selesai dimuat. '
-            'Submit ulang belum dapat dilakukan.',
+        'Data revisi belum selesai dimuat.',
       );
       return;
     }
 
-    await submitDop();
+    if (selectedJobSiteId == null) {
+      showMessage('Job Site wajib dipilih');
+      return;
+    }
+
+    if (activityDrafts.isEmpty) {
+      showMessage(
+        'Minimal satu aktivitas kendaraan wajib tersedia.',
+      );
+      return;
+    }
+
+    if (hasUnfinishedEditing()) {
+      showMessage(
+        'Selesaikan Update Aktivitas '
+            'sebelum Submit Ulang Revisi.',
+      );
+      return;
+    }
+
+    final shouldSubmit =
+    await showRevisionSubmitConfirmation();
+
+    if (!shouldSubmit) {
+      return;
+    }
+
+    setState(() {
+      isSubmitting = true;
+    });
+
+    try {
+      final repository = ref.read(
+        dopSubmissionRepositoryProvider,
+      );
+
+      final result =
+      await repository.resubmitRevision(
+        dopHeaderId: revisionDopHeaderId!,
+        jobSiteId: selectedJobSiteId!,
+        dopDate: selectedDate,
+        dayName: getDayName(selectedDate),
+        activities: activityDrafts,
+      );
+
+      ref.invalidate(dopListProvider);
+      ref.invalidate(dopRevisionListProvider);
+      ref.invalidate(dopApprovalListProvider);
+
+      if (!mounted) {
+        return;
+      }
+
+      showMessage(
+        'Revisi DOP ${result.dopNumber} '
+            'berhasil dikirim ulang.',
+      );
+
+      await Future<void>.delayed(
+        const Duration(milliseconds: 500),
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      context.go('/dop-revisions');
+    } catch (error) {
+      showMessage(
+        extractSubmissionError(error),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          isSubmitting = false;
+        });
+      }
+    }
+  }
+
+  Future<bool>
+  showRevisionSubmitConfirmation() async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (
+          BuildContext dialogContext,
+          ) {
+        return AlertDialog(
+          title: const Text(
+            'Submit Ulang Revisi',
+          ),
+          content: Text(
+            'Kirim ulang $activeRevisionDopNumber '
+                'dengan ${activityDrafts.length} aktivitas?\n\n'
+                'DOP akan kembali ke Approval Layer 3.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(
+                  dialogContext,
+                ).pop(false);
+              },
+              child: const Text('Batal'),
+            ),
+            FilledButton.icon(
+              onPressed: () {
+                Navigator.of(
+                  dialogContext,
+                ).pop(true);
+              },
+              icon: const Icon(
+                Icons.send_outlined,
+              ),
+              label: const Text(
+                'Submit Ulang',
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    return result ?? false;
   }
 
   Future<bool> showSubmitConfirmation() async {
@@ -1094,7 +1232,7 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9FC),
       body: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(20),
         child: isLoading
             ? const Center(
           child: CircularProgressIndicator(),
@@ -1122,14 +1260,14 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
                           isRevisionMode
                               ? 'Revisi DOP'
                               : 'Request Form DOP',
-                          style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
+                          style: const TextStyle(
+                            fontSize: 24,
+                            height: 1.1,
+                            fontWeight: FontWeight.w700,
                             color: Color(0xFF0F172A),
                           ),
                         ),
-
-                        SizedBox(height: 6),
+                        const SizedBox(height: 4),
 
                         Text(
                           isRevisionMode
@@ -1141,7 +1279,8 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
                               'Transportasi',
                           style: const TextStyle(
                             color: Color(0xFF64748B),
-                            fontSize: 14,
+                            fontSize: 12.5,
+                            height: 1.2,
                           ),
                         ),
                       ],
@@ -1159,11 +1298,33 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
 
                       context.go('/dop-list');
                     },
-                    icon: const Icon(Icons.arrow_back),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(0, 36),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 7,
+                      ),
+                      foregroundColor: const Color(0xFF315D8A),
+                      side: const BorderSide(
+                        color: Color(0xFF94A3B8),
+                      ),
+                      textStyle: const TextStyle(
+                        fontSize: 11.5,
+                        height: 1,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    icon: const Icon(
+                      Icons.arrow_back,
+                      size: 16,
+                    ),
                     label: const Text('Kembali'),
                   ),
 
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 8),
 
                   ElevatedButton.icon(
                     onPressed:
@@ -1173,6 +1334,28 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
                             !hasAppliedRevisionData)
                         ? null
                         : handleMainSubmit,
+                    style: ElevatedButton.styleFrom(
+                      minimumSize: const Size(0, 36),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 13,
+                        vertical: 7,
+                      ),
+                      foregroundColor: const Color(0xFF172033),
+                      backgroundColor: const Color(0xFFFFB238),
+                      disabledForegroundColor:
+                      const Color(0xFF94A3B8),
+                      disabledBackgroundColor:
+                      const Color(0xFFE2E8F0),
+                      elevation: 0,
+                      textStyle: const TextStyle(
+                        fontSize: 11.5,
+                        height: 1,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
                     icon: isSubmitting
                         ? const SizedBox(
                           width: 16,
@@ -1181,7 +1364,10 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
                            strokeWidth: 2,
                          ),
                         )
-                        : const Icon(Icons.send),
+                        : const Icon(
+                      Icons.send,
+                      size: 16,
+                    ),
                     label: Text(
                       isSubmitting
                           ? isRevisionMode
@@ -1196,7 +1382,7 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
                   ),
                 ],
               ),
-              const SizedBox(height: 22),
+              const SizedBox(height: 16),
               Expanded(
                 child: SingleChildScrollView(
                   child: Column(
@@ -1209,7 +1395,7 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
                           onRevisionLoaded:
                           applyRevisionData,
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 12),
                       ],
                       DopHeaderForm(
                         formattedDate:
@@ -1224,7 +1410,7 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
                         handleJobSiteChanged,
                       ),
 
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
 
                       DopActivityTable(
                         drafts: activityDrafts,
@@ -1234,7 +1420,7 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
                         onDelete: deleteActivity,
                       ),
 
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
 
                       DopActivityForm(
                         workPlanController: workPlanController,

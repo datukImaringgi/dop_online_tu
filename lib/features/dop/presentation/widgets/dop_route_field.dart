@@ -144,7 +144,7 @@ class _DopRouteFieldState extends State<DopRouteField> {
       focusNode: focusNode,
       validator: validateRoute,
       style: const TextStyle(
-        fontSize: 14,
+        fontSize: 12.5,
         color: Color(0xFF0F172A),
       ),
       decoration: buildCompactInputDecoration(
@@ -152,7 +152,7 @@ class _DopRouteFieldState extends State<DopRouteField> {
         hintText: 'Pilih suggestion atau ketik rute baru',
         suffixIcon: const Icon(
           Icons.route_outlined,
-          size: 20,
+          size: 17,
         ),
       ),
     );
@@ -173,14 +173,14 @@ class _DopRouteFieldState extends State<DopRouteField> {
       alignment: Alignment.topLeft,
       child: Material(
         elevation: 6,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
         child: ConstrainedBox(
           constraints: const BoxConstraints(
-            maxWidth: 500,
-            maxHeight: 240,
+            maxWidth: 460,
+            maxHeight: 220,
           ),
           child: ListView.builder(
-            padding: const EdgeInsets.symmetric(vertical: 6),
+            padding: const EdgeInsets.symmetric(vertical: 4),
             shrinkWrap: true,
             itemCount: optionList.length,
             itemBuilder: (context, index) {
@@ -190,11 +190,23 @@ class _DopRouteFieldState extends State<DopRouteField> {
 
               return ListTile(
                 dense: true,
-                leading: const Icon(Icons.route_outlined),
-                title: Text(routeName),
                 onTap: () {
                   onSelected(route);
                 },
+                visualDensity: VisualDensity.compact,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                ),
+                leading: const Icon(
+                  Icons.route_outlined,
+                  size: 17,
+                ),
+                title: Text(
+                  routeName,
+                  style: const TextStyle(
+                    fontSize: 11.5,
+                  ),
+                ),
               );
             },
           ),

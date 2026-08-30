@@ -257,7 +257,7 @@ class _DopMasterAutocompleteState
       focusNode: fieldFocusNode,
       validator: validateSelection,
       style: const TextStyle(
-        fontSize: 14,
+        fontSize: 12.5,
         color: Color(0xFF0F172A),
       ),
       decoration: buildCompactInputDecoration(
@@ -265,7 +265,7 @@ class _DopMasterAutocompleteState
         hintText: widget.hintText,
         suffixIcon: const Icon(
           Icons.search,
-          size: 20,
+          size: 17,
         ),
       ),
     );
@@ -286,17 +286,17 @@ class _DopMasterAutocompleteState
       alignment: Alignment.topLeft,
       child: Material(
         elevation: 8,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
         clipBehavior: Clip.antiAlias,
         child: ConstrainedBox(
           constraints: const BoxConstraints(
-            minWidth: 320,
-            maxWidth: 520,
-            maxHeight: 280,
+            minWidth: 280,
+            maxWidth: 460,
+            maxHeight: 240,
           ),
           child: ListView.separated(
             padding: const EdgeInsets.symmetric(
-              vertical: 6,
+              vertical: 4,
             ),
             shrinkWrap: true,
             itemCount: optionList.length,

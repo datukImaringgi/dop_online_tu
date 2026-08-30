@@ -9,31 +9,63 @@ InputDecoration buildCompactInputDecoration({
     labelText: label,
     hintText: hintText,
     isDense: true,
-    floatingLabelBehavior: FloatingLabelBehavior.auto,
+    floatingLabelBehavior:
+    FloatingLabelBehavior.auto,
     contentPadding: const EdgeInsets.symmetric(
-      horizontal: 12,
-      vertical: 11,
+      horizontal: 10,
+      vertical: 9,
+    ),
+    labelStyle: const TextStyle(
+      color: Color(0xFF64748B),
+      fontSize: 10.5,
+      height: 1,
+    ),
+    floatingLabelStyle: const TextStyle(
+      color: Color(0xFF2563EB),
+      fontSize: 10.5,
+      height: 1,
+      fontWeight: FontWeight.w600,
+    ),
+    hintStyle: const TextStyle(
+      color: Color(0xFF94A3B8),
+      fontSize: 11.5,
+    ),
+    errorStyle: const TextStyle(
+      fontSize: 9.5,
+      height: 1,
     ),
     suffixIcon: suffixIcon,
     suffixIconConstraints: const BoxConstraints(
-      minWidth: 40,
-      minHeight: 40,
+      minWidth: 34,
+      minHeight: 34,
     ),
-    border: const OutlineInputBorder(),
-    enabledBorder: const OutlineInputBorder(
-      borderSide: BorderSide(
-        color: Color(0xFF94A3B8),
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(8),
+    ),
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(8),
+      borderSide: const BorderSide(
+        color: Color(0xFFCBD5E1),
       ),
     ),
-    focusedBorder: const OutlineInputBorder(
-      borderSide: BorderSide(
-        color: Color(0xFF0D6EFD),
-        width: 1.5,
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(8),
+      borderSide: const BorderSide(
+        color: Color(0xFF2563EB),
+        width: 1.25,
       ),
     ),
-    errorBorder: const OutlineInputBorder(
-      borderSide: BorderSide(
+    errorBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(8),
+      borderSide: const BorderSide(
         color: Color(0xFFEF4444),
+      ),
+    ),
+    focusedErrorBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(8),
+      borderSide: const BorderSide(
+        color: Color(0xFFEF4444),
+        width: 1.25,
       ),
     ),
   );
@@ -55,13 +87,13 @@ class DopSectionCard extends StatelessWidget {
       elevation: 0,
       color: Colors.white,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         side: const BorderSide(
           color: Color(0xFFE2E8F0),
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -69,11 +101,11 @@ class DopSectionCard extends StatelessWidget {
               title,
               style: const TextStyle(
                 color: Color(0xFF0F172A),
-                fontSize: 17,
+                fontSize: 13,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 10),
             ...children,
           ],
         ),
@@ -104,7 +136,7 @@ class DopGridSectionCard extends StatelessWidget {
       color: Colors.white,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(12),
         side: const BorderSide(
           color: Color(0xFFE2E8F0),
         ),
@@ -118,7 +150,7 @@ class DopGridSectionCard extends StatelessWidget {
             color: Color(0xFFE2E8F0),
           ),
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(12),
             child: Column(
               children: children,
             ),
@@ -130,8 +162,8 @@ class DopGridSectionCard extends StatelessWidget {
             ),
             Padding(
               padding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 12,
+                horizontal: 12,
+                vertical: 9,
               ),
               child: footer!,
             ),
@@ -144,33 +176,33 @@ class DopGridSectionCard extends StatelessWidget {
   Widget buildHeader() {
     return Padding(
       padding: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 13,
+        horizontal: 12,
+        vertical: 8,
       ),
       child: Row(
         children: [
           Container(
-            width: 32,
-            height: 32,
+            width: 24,
+            height: 24,
             decoration: BoxDecoration(
               color: const Color(0xFFEFF6FF),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(6),
             ),
             child: Icon(
               icon,
               color: const Color(0xFF2563EB),
-              size: 18,
+              size: 14,
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 8),
           Expanded(
             child: Text(
               title,
               style: const TextStyle(
                 color: Color(0xFF0F172A),
-                fontSize: 16,
+                fontSize: 13,
                 height: 1.1,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),
@@ -189,7 +221,7 @@ class DopFormGridRow extends StatelessWidget {
     super.key,
     required this.children,
     this.flexValues,
-    this.spacing = 14,
+    this.spacing = 10,
   });
 
   @override
@@ -232,7 +264,7 @@ class DopFormGridDivider extends StatelessWidget {
 
   const DopFormGridDivider({
     super.key,
-    this.verticalPadding = 14,
+    this.verticalPadding = 10,
   });
 
   @override
@@ -277,13 +309,13 @@ class DopDropdownField extends StatelessWidget {
       iconSize: 0,
       style: const TextStyle(
         color: Color(0xFF0F172A),
-        fontSize: 14,
+        fontSize: 12.5,
       ),
       decoration: buildCompactInputDecoration(
         label: label,
         suffixIcon: const Icon(
           Icons.keyboard_arrow_down,
-          size: 20,
+          size: 17,
         ),
       ),
       items: _buildItems(),
@@ -360,13 +392,13 @@ class DopSimpleDropdown extends StatelessWidget {
       iconSize: 0,
       style: const TextStyle(
         color: Color(0xFF0F172A),
-        fontSize: 14,
+        fontSize: 12.5,
       ),
       decoration: buildCompactInputDecoration(
         label: label,
         suffixIcon: const Icon(
           Icons.keyboard_arrow_down,
-          size: 20,
+          size: 17,
         ),
       ),
       items: items,
@@ -397,13 +429,13 @@ class DopDateField extends StatelessWidget {
           label: label,
           suffixIcon: const Icon(
             Icons.calendar_month_outlined,
-            size: 20,
+            size: 17,
           ),
         ),
         child: Text(
           value,
           style: const TextStyle(
-            fontSize: 14,
+            fontSize: 12.5,
             color: Color(0xFF0F172A),
           ),
         ),
@@ -457,7 +489,7 @@ class DopTimeField extends StatelessWidget {
               label: label,
               suffixIcon: const Icon(
                 Icons.schedule_outlined,
-                size: 20,
+                size: 17,
               ),
             ).copyWith(
               errorText: fieldState.errorText,
@@ -465,7 +497,7 @@ class DopTimeField extends StatelessWidget {
             child: Text(
               value,
               style: const TextStyle(
-                fontSize: 13,
+                fontSize: 12.5,
                 color: Color(0xFF0F172A),
               ),
             ),
