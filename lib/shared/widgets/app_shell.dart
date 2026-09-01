@@ -6,6 +6,7 @@ import '../providers/supabase_provider.dart';
 import '../providers/user_session_provider.dart';
 import '../../features/approval/data/dop_approval_provider.dart';
 import '../../features/dop/data/dop_revision_list_provider.dart';
+import '../../features/master/data/master_change_request_provider.dart';
 
 class AppShell extends ConsumerWidget {
   final Widget child;
@@ -31,6 +32,10 @@ class AppShell extends ConsumerWidget {
 
     if (location.startsWith('/approval')) {
       return 3;
+    }
+
+    if (location.startsWith('/master-approval')) {
+      return 5;
     }
 
     if (location.startsWith('/master')) {
@@ -66,6 +71,11 @@ class AppShell extends ConsumerWidget {
 
     if (index == 4) {
       context.go('/master');
+      return;
+    }
+
+    if (index == 5) {
+      context.go('/master-approval');
     }
   }
 
@@ -132,9 +142,22 @@ class AppShell extends ConsumerWidget {
     final hierarchyLayer =
         hierarchyAsync.asData?.value;
 
-    final canAccessAdministration =
+    final canAccessDopRevision =
+        hierarchyLayer != null &&
+            hierarchyLayer >= 1 &&
+            hierarchyLayer <= 4;
+
+    final canAccessDopApproval =
+        hierarchyLayer == 3 ||
+            hierarchyLayer == 4;
+
+    final canAccessMasterData =
         hierarchyLayer != null &&
             hierarchyLayer >= 3;
+
+    final canAccessMasterApproval =
+        hierarchyLayer == 5;
+
     final pendingApprovalCountAsync = ref.watch(
       pendingApprovalCountProvider,
     );
@@ -147,17 +170,34 @@ class AppShell extends ConsumerWidget {
         ? pendingApprovalCount.toString()
         : null;
 
-    final revisionCountAsync = ref.watch(
-      dopRevisionCountProvider,
+    final pendingMasterCountAsync = ref.watch(
+      pendingMasterChangeCountProvider,
     );
 
-    final revisionCount =
-        revisionCountAsync.asData?.value ?? 0;
+    final pendingMasterCount =
+        pendingMasterCountAsync.asData?.value ??
+            0;
 
-    final revisionBadge =
-    revisionCount > 0
-        ? revisionCount.toString()
+    final pendingMasterBadge =
+    pendingMasterCount > 0
+        ? pendingMasterCount.toString()
         : null;
+
+    String? revisionBadge;
+
+    if (canAccessDopRevision) {
+      final revisionCountAsync = ref.watch(
+        dopRevisionCountProvider,
+      );
+
+      final revisionCount =
+          revisionCountAsync.asData?.value ?? 0;
+
+      if (revisionCount > 0) {
+        revisionBadge =
+            revisionCount.toString();
+      }
+    }
 
     return Scaffold(
       body: Row(
@@ -275,32 +315,44 @@ class AppShell extends ConsumerWidget {
                             onMenuSelected(context, 1);
                           },
                         ),
-                        _SidebarMenuItem(
-                          icon: Icons.edit_note_outlined,
-                          label: 'Revisi DOP',
-                          isSelected: selectedIndex == 2,
-                          badgeText: revisionBadge,
-                          onTap: () {
-                            onMenuSelected(context, 2);
-                          },
-                        ),
-                        if (canAccessAdministration)
+                        if (canAccessDopRevision)
+                          _SidebarMenuItem(
+                            icon: Icons.edit_note_outlined,
+                            label: 'Revisi DOP',
+                            isSelected: selectedIndex == 2,
+                            badgeText: revisionBadge,
+                            onTap: () {
+                              onMenuSelected(context, 2);
+                            },
+                          ),
+                        if (canAccessDopApproval)
                           _SidebarMenuItem(
                             icon: Icons.fact_check_outlined,
-                            label: 'Approval',
+                            label: 'Approval DOP',
                             isSelected: selectedIndex == 3,
                             badgeText: pendingApprovalBadge,
                             onTap: () {
                               onMenuSelected(context, 3);
                             },
                           ),
-                        if (canAccessAdministration)
+                        if (canAccessMasterData)
                           _SidebarMenuItem(
                             icon: Icons.storage_outlined,
                             label: 'Master Data',
                             isSelected: selectedIndex == 4,
                             onTap: () {
                               onMenuSelected(context, 4);
+                            },
+                          ),
+
+                        if (canAccessMasterApproval)
+                          _SidebarMenuItem(
+                            icon: Icons.approval_outlined,
+                            label: 'Approval Master',
+                            isSelected: selectedIndex == 5,
+                            badgeText: pendingMasterBadge,
+                            onTap: () {
+                              onMenuSelected(context, 5);
                             },
                           ),
                       ],

@@ -11,6 +11,8 @@ import '../shared/widgets/app_shell.dart';
 import '../features/approval/domain/dop_approval_list_item.dart';
 import '../features/approval/presentation/dop_approval_detail_page.dart';
 import '../features/dop/presentation/dop_revision_list_page.dart';
+import '../features/master/presentation/master_page.dart';
+import '../features/master/presentation/master_approval_page.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -79,10 +81,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             },
           ),
           GoRoute(
+            path: '/master-approval',
+            builder: (context, state) {
+              return const MasterApprovalPage();
+            },
+          ),
+          GoRoute(
             path: '/master',
             builder: (context, state) {
               return const MasterPage();
-            }
+            },
           ),
         ],
       ),

@@ -6,9 +6,26 @@ import '../domain/company_user_hierarchy_model.dart';
 import '../../../shared/providers/user_session_provider.dart';
 import 'widgets/edit_user_assignment_dialog.dart';
 import 'widgets/add_company_user_dialog.dart';
+import '../domain/master_unit_model.dart';
+import 'widgets/master_unit_dialog.dart';
+import 'widgets/master_unit_section.dart';
 
-class MasterPage extends ConsumerWidget {
-  const MasterPage({super.key});
+
+class MasterPage
+    extends ConsumerStatefulWidget {
+  const MasterPage({
+    super.key,
+  });
+
+  @override
+  ConsumerState<MasterPage> createState() {
+    return _MasterPageState();
+  }
+}
+
+class _MasterPageState
+    extends ConsumerState<MasterPage> {
+  int selectedMenuIndex = 0;
 
   void _handleEditUser(
       BuildContext context,
@@ -74,8 +91,98 @@ class MasterPage extends ConsumerWidget {
     );
   }
 
+  void _handleAddUnit({
+    required BuildContext context,
+    required int? hierarchyLayer,
+    required String? companyId,
+    required String? companyName,
+  }) {
+    if (hierarchyLayer == null ||
+        hierarchyLayer < 3) {
+      return;
+    }
+
+    final isLayerFive =
+        hierarchyLayer == 5;
+
+    if (!isLayerFive &&
+        (companyId == null ||
+            companyId.isEmpty)) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(
+        const SnackBar(
+          backgroundColor:
+          Color(0xFFDC2626),
+          content: Text(
+            'Perusahaan admin tidak ditemukan.',
+          ),
+        ),
+      );
+
+      return;
+    }
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (
+          BuildContext dialogContext,
+          ) {
+        return MasterUnitDialog(
+          unit: null,
+          actorHierarchyLayer:
+          hierarchyLayer,
+          fixedCompanyId: isLayerFive
+              ? null
+              : companyId,
+          fixedCompanyName: isLayerFive
+              ? null
+              : companyName,
+        );
+      },
+    );
+  }
+
+  void _handleEditUnit({
+    required BuildContext context,
+    required MasterUnitModel unit,
+    required int? hierarchyLayer,
+    required String? companyId,
+    required String? companyName,
+  }) {
+    if (hierarchyLayer == null ||
+        hierarchyLayer < 3) {
+      return;
+    }
+
+    final isLayerFive =
+        hierarchyLayer == 5;
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (
+          BuildContext dialogContext,
+          ) {
+        return MasterUnitDialog(
+          unit: unit,
+          actorHierarchyLayer:
+          hierarchyLayer,
+          fixedCompanyId: isLayerFive
+              ? null
+              : companyId,
+          fixedCompanyName: isLayerFive
+              ? null
+              : companyName,
+        );
+      },
+    );
+  }
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(
+      BuildContext context,
+      ) {
     final usersAsync = ref.watch(
       companyUserHierarchyProvider,
     );
@@ -104,23 +211,53 @@ class MasterPage extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildHeader(
-              context,
-              ref,
-              canRegisterUser,
-              currentHierarchyLayer,
-              companyAccess?.companyId,
-              companyAccess?.companyName,
-            ),
-            const SizedBox(height: 18),
+            _buildHeader(),
+            const SizedBox(height: 14),
+            _buildMasterMenu(),
+            const SizedBox(height: 12),
             Expanded(
-              child: usersAsync.when(
+              child: selectedMenuIndex == 0
+                  ? usersAsync.when(
                 loading: _buildLoading,
                 error: _buildError,
                 data: (users) {
                   return _buildContent(
-                    context,
-                    users,
+                    context: context,
+                    users: users,
+                    canRegisterUser: canRegisterUser,
+                    currentHierarchyLayer:
+                    currentHierarchyLayer,
+                    currentCompanyId:
+                    companyAccess?.companyId,
+                    currentCompanyName:
+                    companyAccess?.companyName,
+                  );
+                },
+              )
+                  : MasterUnitSection(
+                onAdd: () {
+                  _handleAddUnit(
+                    context: context,
+                    hierarchyLayer:
+                    currentHierarchyLayer,
+                    companyId:
+                    companyAccess?.companyId,
+                    companyName:
+                    companyAccess?.companyName,
+                  );
+                },
+                onEdit: (
+                    MasterUnitModel unit,
+                    ) {
+                  _handleEditUnit(
+                    context: context,
+                    unit: unit,
+                    hierarchyLayer:
+                    currentHierarchyLayer,
+                    companyId:
+                    companyAccess?.companyId,
+                    companyName:
+                    companyAccess?.companyName,
                   );
                 },
               ),
@@ -131,92 +268,117 @@ class MasterPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildHeader(
-      BuildContext context,
-      WidgetRef ref,
-      bool canRegisterUser,
-      int? currentHierarchyLayer,
-      String? currentCompanyId,
-      String? currentCompanyName,
-      ) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildMasterMenu() {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEFF3F8),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildMasterMenuButton(
+            index: 0,
+            label: 'User & Hierarchy',
+            icon: Icons.manage_accounts_outlined,
+          ),
+          const SizedBox(width: 4),
+          _buildMasterMenuButton(
+            index: 1,
+            label: 'Master Unit',
+            icon: Icons.directions_bus_outlined,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMasterMenuButton({
+    required int index,
+    required String label,
+    required IconData icon,
+  }) {
+    final isSelected =
+        selectedMenuIndex == index;
+
+    return InkWell(
+      onTap: () {
+        setState(() {
+          selectedMenuIndex = index;
+        });
+      },
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        height: 34,
+        padding: const EdgeInsets.symmetric(
+          horizontal: 11,
+        ),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? Colors.white
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: isSelected
+              ? const [
+            BoxShadow(
+              color: Color(0x140F172A),
+              blurRadius: 4,
+              offset: Offset(0, 1),
+            ),
+          ]
+              : null,
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              size: 16,
+              color: isSelected
+                  ? const Color(0xFF2563EB)
+                  : const Color(0xFF64748B),
+            ),
+            const SizedBox(width: 7),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected
+                    ? const Color(0xFF0F172A)
+                    : const Color(0xFF64748B),
+                fontSize: 11.5,
+                fontWeight: isSelected
+                    ? FontWeight.w700
+                    : FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return const Column(
+      crossAxisAlignment:
+      CrossAxisAlignment.start,
       children: [
-        const Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Master Data',
-                style: TextStyle(
-                  color: Color(0xFF0F172A),
-                  fontSize: 26,
-                  height: 1.1,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              SizedBox(height: 4),
-              Text(
-                'Kelola user, hierarchy, dan master operasional.',
-                style: TextStyle(
-                  color: Color(0xFF64748B),
-                  fontSize: 13,
-                ),
-              ),
-            ],
+        Text(
+          'Master Data',
+          style: TextStyle(
+            color: Color(0xFF0F172A),
+            fontSize: 26,
+            height: 1.1,
+            fontWeight: FontWeight.bold,
           ),
         ),
-        if (canRegisterUser) ...[
-          ElevatedButton.icon(
-            onPressed: () {
-              _handleAddUser(
-                context,
-                currentHierarchyLayer,
-                currentCompanyId,
-                currentCompanyName,
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              minimumSize: const Size(0, 40),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 14,
-                vertical: 9,
-              ),
-              textStyle: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            icon: const Icon(
-              Icons.person_add_alt_1_outlined,
-              size: 18,
-            ),
-            label: const Text('Tambah User'),
+        SizedBox(height: 4),
+        Text(
+          'Kelola user, hierarchy, '
+              'dan master operasional.',
+          style: TextStyle(
+            color: Color(0xFF64748B),
+            fontSize: 13,
           ),
-          const SizedBox(width: 10),
-        ],
-        OutlinedButton.icon(
-          onPressed: () {
-            ref.invalidate(
-              companyUserHierarchyProvider,
-            );
-          },
-          style: OutlinedButton.styleFrom(
-            minimumSize: const Size(0, 40),
-            padding: const EdgeInsets.symmetric(
-              horizontal: 14,
-              vertical: 9,
-            ),
-            textStyle: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          icon: const Icon(
-            Icons.refresh,
-            size: 18,
-          ),
-          label: const Text('Refresh'),
         ),
       ],
     );
@@ -277,48 +439,144 @@ class MasterPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildContent(
-      BuildContext context,
-      List<CompanyUserHierarchyModel> users,
-      ) {
+  Widget _buildContent({
+    required BuildContext context,
+    required List<CompanyUserHierarchyModel>
+    users,
+    required bool canRegisterUser,
+    required int? currentHierarchyLayer,
+    required String? currentCompanyId,
+    required String? currentCompanyName,
+  }) {
     return Card(
+      margin: EdgeInsets.zero,
       elevation: 0,
       color: Colors.white,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(12),
         side: const BorderSide(
           color: Color(0xFFE2E8F0),
         ),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment:
+        CrossAxisAlignment.start,
         children: [
-          const Padding(
-            padding: EdgeInsets.fromLTRB(
-              16,
-              14,
-              16,
-              12,
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 8,
             ),
             child: Row(
               children: [
-                Icon(
-                  Icons.manage_accounts_outlined,
-                  color: Color(0xFF0D6EFD),
-                  size: 21,
+                Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color:
+                    const Color(0xFFEFF6FF),
+                    borderRadius:
+                    BorderRadius.circular(6),
+                  ),
+                  child: const Icon(
+                    Icons
+                        .manage_accounts_outlined,
+                    color: Color(0xFF2563EB),
+                    size: 14,
+                  ),
                 ),
-                SizedBox(width: 10),
-                Expanded(
+                const SizedBox(width: 8),
+                const Expanded(
                   child: Text(
                     'User & Hierarchy',
                     style: TextStyle(
                       color: Color(0xFF0F172A),
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                      height: 1.1,
+                      fontWeight:
+                      FontWeight.w700,
                     ),
                   ),
                 ),
+                OutlinedButton.icon(
+                  onPressed: () {
+                    ref.invalidate(
+                      companyUserHierarchyProvider,
+                    );
+                  },
+                  style:
+                  OutlinedButton.styleFrom(
+                    minimumSize:
+                    const Size(0, 34),
+                    padding:
+                    const EdgeInsets.symmetric(
+                      horizontal: 10,
+                    ),
+                    textStyle:
+                    const TextStyle(
+                      fontSize: 11.5,
+                      fontWeight:
+                      FontWeight.w600,
+                    ),
+                    shape:
+                    RoundedRectangleBorder(
+                      borderRadius:
+                      BorderRadius.circular(8),
+                    ),
+                  ),
+                  icon: const Icon(
+                    Icons.refresh,
+                    size: 16,
+                  ),
+                  label: const Text('Refresh'),
+                ),
+                if (canRegisterUser) ...[
+                  const SizedBox(width: 8),
+                  FilledButton.icon(
+                    onPressed: () {
+                      _handleAddUser(
+                        context,
+                        currentHierarchyLayer,
+                        currentCompanyId,
+                        currentCompanyName,
+                      );
+                    },
+                    style:
+                    FilledButton.styleFrom(
+                      minimumSize:
+                      const Size(0, 34),
+                      padding:
+                      const EdgeInsets.symmetric(
+                        horizontal: 11,
+                      ),
+                      backgroundColor:
+                      const Color(
+                        0xFF2563EB,
+                      ),
+                      textStyle:
+                      const TextStyle(
+                        fontSize: 11.5,
+                        fontWeight:
+                        FontWeight.w600,
+                      ),
+                      shape:
+                      RoundedRectangleBorder(
+                        borderRadius:
+                        BorderRadius.circular(
+                          8,
+                        ),
+                      ),
+                    ),
+                    icon: const Icon(
+                      Icons
+                          .person_add_alt_1_outlined,
+                      size: 16,
+                    ),
+                    label:
+                    const Text('Tambah User'),
+                  ),
+                ],
               ],
             ),
           ),
@@ -331,7 +589,10 @@ class MasterPage extends ConsumerWidget {
                 ? _buildEmptyState()
                 : _UserHierarchyTable(
               users: users,
-              onEdit: (user) {
+              onEdit: (
+                  CompanyUserHierarchyModel
+                  user,
+                  ) {
                 _handleEditUser(
                   context,
                   user,
@@ -367,7 +628,7 @@ class MasterPage extends ConsumerWidget {
             ),
             SizedBox(height: 4),
             Text(
-              'Tambahkan akun testing melalui Supabase Dashboard.',
+                'Klik Tambah User untuk mendaftarkan user baru.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: Color(0xFF64748B),

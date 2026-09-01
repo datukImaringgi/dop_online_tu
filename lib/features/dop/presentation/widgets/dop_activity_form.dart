@@ -941,12 +941,12 @@ class DopActivityForm extends StatelessWidget {
       value: selectedShift,
       items: const [
         DropdownMenuItem<String>(
-          value: 'Day Shift',
-          child: Text('Day Shift'),
+          value: 'Shift 1',
+          child: Text('Shift 1'),
         ),
         DropdownMenuItem<String>(
-          value: 'Night Shift',
-          child: Text('Night Shift'),
+          value: 'Shift 2',
+          child: Text('Shift 2'),
         ),
       ],
       onChanged: onShiftChanged,

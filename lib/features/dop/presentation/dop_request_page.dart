@@ -85,7 +85,7 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
   String? selectedControlRoomId;
 
   String selectedAreaType = 'site';
-  String selectedShift = 'Day Shift';
+  String selectedShift = 'Shift 1';
 
   String? selectedLayer1UserId;
   String? selectedLayer2UserId;
@@ -798,7 +798,7 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
     selectedControlRoomId = null;
 
     selectedAreaType = 'site';
-    selectedShift = 'Day Shift';
+    selectedShift = 'Shift 1';
 
     editingDraftId = null;
   }

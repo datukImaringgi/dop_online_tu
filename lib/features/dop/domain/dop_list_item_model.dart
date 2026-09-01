@@ -7,6 +7,7 @@ class DopListItemModel {
   final String createdBy;
   final int revisionNumber;
   final DateTime? submittedAt;
+  final DateTime? approvedAt;
   final String companyName;
   final String companyCode;
 
@@ -55,6 +56,7 @@ class DopListItemModel {
     required this.createdBy,
     required this.revisionNumber,
     required this.submittedAt,
+    required this.approvedAt,
     required this.companyName,
     required this.companyCode,
     required this.dayName,
@@ -101,6 +103,9 @@ class DopListItemModel {
       ),
       submittedAt: readDateTime(
         map['submitted_at'],
+      ),
+      approvedAt: readDateTime(
+        map['approved_at'],
       ),
       companyName: map['company_name'] as String? ?? '-',
       companyCode: map['company_code'] as String? ?? '-',
