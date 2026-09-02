@@ -91,6 +91,26 @@ class AppShell extends ConsumerWidget {
       await supabase.auth.signOut();
 
       ref.invalidate(
+        dopRevisionListProvider,
+      );
+
+      ref.invalidate(
+        dopRevisionCountProvider,
+      );
+
+      ref.invalidate(
+        pendingApprovalCountProvider,
+      );
+
+      ref.invalidate(
+        masterChangeRequestsProvider,
+      );
+
+      ref.invalidate(
+        pendingMasterChangeCountProvider,
+      );
+
+      ref.invalidate(
         currentProfileProvider,
       );
 
@@ -155,7 +175,12 @@ class AppShell extends ConsumerWidget {
         hierarchyLayer != null &&
             hierarchyLayer >= 3;
 
-    final canAccessMasterApproval =
+    final canAccessMasterRequest =
+        hierarchyLayer == 3 ||
+            hierarchyLayer == 4 ||
+            hierarchyLayer == 5;
+
+    final canReviewMasterRequest =
         hierarchyLayer == 5;
 
     final pendingApprovalCountAsync = ref.watch(
@@ -345,10 +370,14 @@ class AppShell extends ConsumerWidget {
                             },
                           ),
 
-                        if (canAccessMasterApproval)
+                        if (canAccessMasterRequest)
                           _SidebarMenuItem(
-                            icon: Icons.approval_outlined,
-                            label: 'Approval Master',
+                            icon: canReviewMasterRequest
+                                ? Icons.approval_outlined
+                                : Icons.history_outlined,
+                            label: canReviewMasterRequest
+                                ? 'Approval Master'
+                                : 'Master Request',
                             isSelected: selectedIndex == 5,
                             badgeText: pendingMasterBadge,
                             onTap: () {

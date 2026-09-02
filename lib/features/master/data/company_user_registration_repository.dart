@@ -4,31 +4,58 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../shared/providers/supabase_provider.dart';
 
 class CompanyUserRegistrationResult {
-  final String userId;
-  final String authEmail;
+  final String resultType;
+  final String? requestId;
+  final String? userId;
+  final String? authEmail;
   final String sid;
   final String companyId;
   final int hierarchyLayer;
+  final String message;
 
   const CompanyUserRegistrationResult({
+    required this.resultType,
+    required this.requestId,
     required this.userId,
     required this.authEmail,
     required this.sid,
     required this.companyId,
     required this.hierarchyLayer,
+    required this.message,
   });
 
   factory CompanyUserRegistrationResult.fromMap(
       Map<String, dynamic> map,
       ) {
     return CompanyUserRegistrationResult(
-      userId: map['userId'] as String,
-      authEmail: map['authEmail'] as String,
-      sid: map['sid'] as String,
-      companyId: map['companyId'] as String,
+      resultType:
+      map['resultType'] as String? ??
+          'applied',
+      requestId:
+      map['requestId'] as String?,
+      userId:
+      map['userId'] as String?,
+      authEmail:
+      map['authEmail'] as String?,
+      sid:
+      map['sid'] as String? ?? '-',
+      companyId:
+      map['companyId'] as String? ?? '',
       hierarchyLayer:
-      map['hierarchyLayer'] as int,
+      map['hierarchyLayer'] as int? ?? 0,
+      message:
+      map['message'] as String? ??
+          'Proses registrasi user selesai.',
     );
+  }
+
+  bool get isPendingApproval {
+    return resultType ==
+        'pending_approval';
+  }
+
+  bool get isAppliedDirectly {
+    return resultType == 'applied';
   }
 }
 

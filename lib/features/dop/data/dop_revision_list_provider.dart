@@ -1,13 +1,19 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../shared/providers/supabase_provider.dart';
+import '../../../shared/providers/user_session_provider.dart';
 import '../domain/dop_revision_list_item.dart';
 
-Future<List<DopRevisionListItem>> loadDopRevisionList(
+Future<List<DopRevisionListItem>>
+loadDopRevisionList(
     Ref ref,
     ) async {
   final supabase = ref.watch(
     supabaseProvider,
+  );
+
+  await ref.watch(
+    currentProfileProvider.future,
   );
 
   final currentUser =

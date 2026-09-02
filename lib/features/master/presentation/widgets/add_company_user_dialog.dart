@@ -8,6 +8,7 @@ import '../../data/company_user_registration_repository.dart';
 import '../../domain/client_company_result.dart';
 import 'add_client_company_dialog.dart';
 import 'company_autocomplete_field.dart';
+import '../../data/master_change_request_provider.dart';
 
 class AddCompanyUserDialog
     extends ConsumerStatefulWidget {
@@ -138,6 +139,14 @@ class _AddCompanyUserDialogState
       activeCompaniesProvider,
     );
 
+    ref.invalidate(
+      masterChangeRequestsProvider,
+    );
+
+    ref.invalidate(
+      pendingMasterChangeCountProvider,
+    );
+
     setState(() {
       selectedCompanyId = result.companyId;
       selectedJobSiteId = null;
@@ -246,17 +255,26 @@ class _AddCompanyUserDialogState
 
       Navigator.of(context).pop();
 
+      String successMessage;
+
+      if (result.isPendingApproval) {
+        successMessage = result.message;
+      } else {
+        successMessage =
+        'User ${result.sid} berhasil didaftarkan. '
+            'Email login: ${result.authEmail ?? '-'}';
+      }
+
       messenger.showSnackBar(
         SnackBar(
           backgroundColor:
-          const Color(0xFF059669),
+          result.isPendingApproval
+              ? const Color(0xFFD97706)
+              : const Color(0xFF059669),
           duration: const Duration(
             seconds: 6,
           ),
-          content: Text(
-            'User ${result.sid} berhasil didaftarkan. '
-                'Email login: ${result.authEmail}',
-          ),
+          content: Text(successMessage),
         ),
       );
     } catch (error) {
@@ -413,8 +431,12 @@ class _AddCompanyUserDialogState
           ),
           label: Text(
             isSaving
+                ? widget.isPlatformSuperAdmin
                 ? 'Mendaftarkan...'
-                : 'Daftarkan User',
+                : 'Mengajukan...'
+                : widget.isPlatformSuperAdmin
+                ? 'Daftarkan User'
+                : 'Ajukan User',
           ),
         ),
       ],

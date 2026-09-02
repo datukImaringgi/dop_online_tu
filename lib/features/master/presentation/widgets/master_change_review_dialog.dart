@@ -8,10 +8,12 @@ import '../../domain/master_change_request_model.dart';
 class MasterChangeReviewDialog
     extends ConsumerStatefulWidget {
   final MasterChangeRequestModel request;
+  final bool allowReview;
 
   const MasterChangeReviewDialog({
     super.key,
     required this.request,
+    required this.allowReview,
   });
 
   @override
@@ -21,16 +23,15 @@ class MasterChangeReviewDialog
   }
 }
 
-class _MasterChangeReviewDialogState
-    extends ConsumerState<
-        MasterChangeReviewDialog> {
+class _MasterChangeReviewDialogState extends ConsumerState< MasterChangeReviewDialog> {
   final reviewNoteController =
   TextEditingController();
 
   bool isProcessing = false;
 
   bool get canReview {
-    return widget.request.isPending;
+    return widget.allowReview &&
+        widget.request.isPending;
   }
 
   String formatReviewDateTime(

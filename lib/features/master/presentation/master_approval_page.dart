@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/master_change_request_provider.dart';
 import '../domain/master_change_request_model.dart';
 import 'widgets/master_change_review_dialog.dart';
+import '../../../shared/providers/user_session_provider.dart';
 
 class MasterApprovalPage
     extends ConsumerStatefulWidget {
@@ -41,9 +42,10 @@ class _MasterApprovalPageState
     );
   }
 
-  void openReviewDialog(
-      MasterChangeRequestModel request,
-      ) {
+  void openReviewDialog({
+    required MasterChangeRequestModel request,
+    required bool canReview,
+  }) {
     showDialog<void>(
       context: context,
       barrierDismissible: false,
@@ -52,8 +54,19 @@ class _MasterApprovalPageState
           ) {
         return MasterChangeReviewDialog(
           request: request,
+          allowReview: canReview,
         );
       },
+    );
+  }
+
+  void openRequestDetail({
+    required MasterChangeRequestModel request,
+    required bool canReview,
+  }) {
+    openReviewDialog(
+      request: request,
+      canReview: canReview,
     );
   }
 
@@ -79,6 +92,16 @@ class _MasterApprovalPageState
 
   @override
   Widget build(BuildContext context) {
+    final hierarchyAsync = ref.watch(
+      currentHierarchyLayerProvider,
+    );
+
+    final hierarchyLayer =
+        hierarchyAsync.asData?.value;
+
+    final canReview =
+        hierarchyLayer == 5;
+
     final requestsAsync = ref.watch(
       masterChangeRequestsProvider,
     );
@@ -92,13 +115,22 @@ class _MasterApprovalPageState
           crossAxisAlignment:
           CrossAxisAlignment.start,
           children: [
-            _buildPageHeader(),
+            _buildPageHeader(
+              canReview: canReview,
+            ),
             const SizedBox(height: 18),
             Expanded(
               child: requestsAsync.when(
                 loading: buildLoading,
                 error: buildError,
-                data: buildRequestContent,
+                data: (
+                    List<MasterChangeRequestModel> requests,
+                    ) {
+                  return buildRequestContent(
+                    requests: requests,
+                    canReview: canReview,
+                  );
+                },
               ),
             ),
           ],
@@ -107,18 +139,22 @@ class _MasterApprovalPageState
     );
   }
 
-  Widget _buildPageHeader() {
+  Widget _buildPageHeader({
+    required bool canReview,
+  }) {
     return Row(
       crossAxisAlignment:
       CrossAxisAlignment.start,
       children: [
-        const Expanded(
+        Expanded(
           child: Column(
             crossAxisAlignment:
             CrossAxisAlignment.start,
             children: [
               Text(
-                'Approval Master Data',
+                canReview
+                    ? 'Approval Master Data'
+                    : 'Status Pengajuan Master Data',
                 style: TextStyle(
                   color: Color(0xFF0F172A),
                   fontSize: 26,
@@ -128,8 +164,11 @@ class _MasterApprovalPageState
               ),
               SizedBox(height: 4),
               Text(
-                'Review perubahan Master Data '
-                    'yang diajukan admin perusahaan.',
+                canReview
+                    ? 'Review perubahan Master Data '
+                    'yang diajukan admin perusahaan.'
+                    : 'Pantau status perubahan Master Data '
+                    'yang diajukan perusahaan Anda.',
                 style: TextStyle(
                   color: Color(0xFF64748B),
                   fontSize: 13,
@@ -285,9 +324,11 @@ class _MasterApprovalPageState
     );
   }
 
-  Widget buildRequestContent(
-      List<MasterChangeRequestModel> requests,
-      ) {
+  Widget buildRequestContent({
+    required List<MasterChangeRequestModel>
+    requests,
+    required bool canReview,
+  }) {
     final filteredRequests =
     filterRequests(requests);
 
@@ -316,10 +357,16 @@ class _MasterApprovalPageState
             child: filteredRequests.isEmpty
                 ? buildEmptyState()
                 : _MasterApprovalTable(
-              requests:
-              filteredRequests,
-              onReview:
-              openReviewDialog,
+              requests: filteredRequests,
+              canReview: canReview,
+              onReview: (
+                  MasterChangeRequestModel request,
+                  ) {
+                openRequestDetail(
+                  request: request,
+                  canReview: canReview,
+                );
+              },
             ),
           ),
         ],
@@ -423,6 +470,7 @@ class _MasterApprovalPageState
 
 class _MasterApprovalTable
     extends StatefulWidget {
+  final bool canReview;
   final List<MasterChangeRequestModel>
   requests;
 
@@ -431,6 +479,7 @@ class _MasterApprovalTable
 
   const _MasterApprovalTable({
     required this.requests,
+    required this.canReview,
     required this.onReview,
   });
 
@@ -567,7 +616,7 @@ class _MasterApprovalTableState
               ),
             ),
             DataCell(
-              request.isPending
+              request.isPending && widget.canReview
                   ? SizedBox(
                 height: 28,
                 child:

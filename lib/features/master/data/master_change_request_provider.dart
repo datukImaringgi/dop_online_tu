@@ -61,11 +61,12 @@ Future<int> loadPendingMasterChangeCount(
     currentHierarchyLayerProvider.future,
   );
 
-  /*
-   * Badge Approval Master hanya diperlukan
-   * oleh Layer 5.
-   */
-  if (hierarchyLayer != 5) {
+  final canAccess =
+      hierarchyLayer == 3 ||
+          hierarchyLayer == 4 ||
+          hierarchyLayer == 5;
+
+  if (!canAccess) {
     return 0;
   }
 
