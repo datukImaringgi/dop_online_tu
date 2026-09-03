@@ -989,6 +989,9 @@ class DopActivityForm extends StatelessWidget {
 
   Widget _buildStartTimeField() {
     return DopTimeField(
+      key: ValueKey<String>(
+        'start-$startTimeText',
+      ),
       label: 'Mulai',
       value: startTimeText,
       onTap: onStartTimeTap,
@@ -998,6 +1001,9 @@ class DopActivityForm extends StatelessWidget {
 
   Widget _buildEndTimeField() {
     return DopTimeField(
+      key: ValueKey<String>(
+        'end-$endTimeText',
+      ),
       label: 'Akhir',
       value: endTimeText,
       onTap: onEndTimeTap,

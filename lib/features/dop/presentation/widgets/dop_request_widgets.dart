@@ -463,9 +463,10 @@ class DopTimeField extends StatelessWidget {
       return null;
     }
 
-    if (currentValue == null ||
-        currentValue.isEmpty ||
-        currentValue == '-') {
+    final latestValue = value.trim();
+
+    if (latestValue.isEmpty ||
+        latestValue == '-') {
       return '$label wajib dipilih';
     }
 
@@ -475,24 +476,33 @@ class DopTimeField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FormField<String>(
+      key: ValueKey<String>(
+        '$label-$value',
+      ),
       initialValue: value,
+      autovalidateMode:
+      AutovalidateMode.onUserInteraction,
       validator: validateTime,
       builder: (
           FormFieldState<String> fieldState,
           ) {
         return InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(4),
+          borderRadius:
+          BorderRadius.circular(4),
           child: InputDecorator(
-            isEmpty: value == '-',
-            decoration: buildCompactInputDecoration(
+            isEmpty:
+            value.isEmpty || value == '-',
+            decoration:
+            buildCompactInputDecoration(
               label: label,
               suffixIcon: const Icon(
                 Icons.schedule_outlined,
                 size: 17,
               ),
             ).copyWith(
-              errorText: fieldState.errorText,
+              errorText:
+              fieldState.errorText,
             ),
             child: Text(
               value,
