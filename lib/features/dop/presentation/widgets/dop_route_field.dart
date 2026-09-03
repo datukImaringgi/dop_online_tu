@@ -1,4 +1,6 @@
+import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
+
 import 'dop_request_widgets.dart';
 
 class DopRouteField extends StatefulWidget {
@@ -50,6 +52,91 @@ class _DopRouteFieldState extends State<DopRouteField> {
     return route['route_name'] as String? ?? '';
   }
 
+  Map<String, dynamic>? findSelectedRoute() {
+    if (widget.selectedRouteId == null) {
+      return null;
+    }
+
+    for (final route in widget.routes) {
+      if (route['id'] ==
+          widget.selectedRouteId) {
+        return route;
+      }
+    }
+
+    return null;
+  }
+
+  bool hasValidRouteSelection() {
+    final selectedRoute =
+    findSelectedRoute();
+
+    if (selectedRoute == null) {
+      return false;
+    }
+
+    final selectedRouteName =
+    displayRoute(selectedRoute);
+
+    return widget.controller.text.trim() ==
+        selectedRouteName.trim();
+  }
+
+  Map<String, dynamic>?
+  findFirstVisibleRoute() {
+    final suggestions = buildSuggestions(
+      widget.controller.value,
+    );
+
+    for (final route in suggestions) {
+      return route;
+    }
+
+    return null;
+  }
+
+  KeyEventResult handleKeyboardEvent(
+      FocusNode node,
+      KeyEvent event,
+      ) {
+    if (event is! KeyDownEvent) {
+      return KeyEventResult.ignored;
+    }
+
+    final isEnter =
+        event.logicalKey ==
+            LogicalKeyboardKey.enter ||
+            event.logicalKey ==
+                LogicalKeyboardKey.numpadEnter;
+
+    final isTab =
+        event.logicalKey ==
+            LogicalKeyboardKey.tab;
+
+    if (!isEnter && !isTab) {
+      return KeyEventResult.ignored;
+    }
+
+    if (hasValidRouteSelection()) {
+      return KeyEventResult.ignored;
+    }
+
+    final firstRoute =
+    findFirstVisibleRoute();
+
+    if (firstRoute == null) {
+      return KeyEventResult.ignored;
+    }
+
+    handleRouteSelected(firstRoute);
+
+    if (isEnter) {
+      return KeyEventResult.handled;
+    }
+
+    return KeyEventResult.ignored;
+  }
+
   void handleRouteSelected(Map<String, dynamic> route) {
     final routeId = route['id'] as String?;
     final routeName = route['route_name'] as String? ?? '';
@@ -59,20 +146,15 @@ class _DopRouteFieldState extends State<DopRouteField> {
   }
 
   void handleTextChanged() {
-    final currentText = widget.controller.text.trim();
+    final currentText =
+    widget.controller.text.trim();
 
     if (widget.selectedRouteId == null) {
       return;
     }
 
-    Map<String, dynamic>? selectedRoute;
-
-    for (final route in widget.routes) {
-      if (route['id'] == widget.selectedRouteId) {
-        selectedRoute = route;
-        break;
-      }
-    }
+    final selectedRoute =
+    findSelectedRoute();
 
     if (selectedRoute == null) {
       widget.onRouteIdChanged(null);
@@ -80,9 +162,10 @@ class _DopRouteFieldState extends State<DopRouteField> {
     }
 
     final selectedRouteName =
-        selectedRoute['route_name'] as String? ?? '';
+    displayRoute(selectedRoute);
 
-    if (currentText != selectedRouteName) {
+    if (currentText !=
+        selectedRouteName.trim()) {
       widget.onRouteIdChanged(null);
     }
   }
@@ -122,14 +205,18 @@ class _DopRouteFieldState extends State<DopRouteField> {
 
   @override
   Widget build(BuildContext context) {
-    return RawAutocomplete<Map<String, dynamic>>(
-      textEditingController: widget.controller,
-      focusNode: routeFocusNode,
-      displayStringForOption: displayRoute,
-      optionsBuilder: buildSuggestions,
-      onSelected: handleRouteSelected,
-      fieldViewBuilder: buildField,
-      optionsViewBuilder: buildOptionsView,
+    return Focus(
+      canRequestFocus: false,
+      onKeyEvent: handleKeyboardEvent,
+      child: RawAutocomplete< Map<String, dynamic>>(
+        textEditingController: widget.controller,
+        focusNode: routeFocusNode,
+        displayStringForOption: displayRoute,
+        optionsBuilder: buildSuggestions,
+        onSelected: handleRouteSelected,
+        fieldViewBuilder: buildField,
+        optionsViewBuilder: buildOptionsView,
+      ),
     );
   }
 

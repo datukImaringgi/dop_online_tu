@@ -1,4 +1,6 @@
+import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
+
 import 'dop_request_widgets.dart';
 
 class DopMasterAutocomplete extends StatefulWidget {
@@ -174,6 +176,75 @@ class _DopMasterAutocompleteState
     return results;
   }
 
+  Map<String, dynamic>?
+  findFirstVisibleSuggestion() {
+    final suggestions = buildSuggestions(
+      widget.controller.value,
+    );
+
+    for (final suggestion in suggestions) {
+      return suggestion;
+    }
+
+    return null;
+  }
+
+  bool hasValidSelection() {
+    final selectedItem = findSelectedItem();
+
+    if (selectedItem == null) {
+      return false;
+    }
+
+    final selectedText =
+    widget.displayBuilder(selectedItem);
+
+    return widget.controller.text.trim() ==
+        selectedText.trim();
+  }
+
+  KeyEventResult handleKeyboardEvent(
+      FocusNode node,
+      KeyEvent event,
+      ) {
+    if (event is! KeyDownEvent) {
+      return KeyEventResult.ignored;
+    }
+
+    final isEnter =
+        event.logicalKey ==
+            LogicalKeyboardKey.enter ||
+            event.logicalKey ==
+                LogicalKeyboardKey.numpadEnter;
+
+    final isTab =
+        event.logicalKey ==
+            LogicalKeyboardKey.tab;
+
+    if (!isEnter && !isTab) {
+      return KeyEventResult.ignored;
+    }
+
+    if (hasValidSelection()) {
+      return KeyEventResult.ignored;
+    }
+
+    final firstSuggestion =
+    findFirstVisibleSuggestion();
+
+    if (firstSuggestion == null) {
+      return KeyEventResult.ignored;
+    }
+
+    handleSelected(firstSuggestion);
+
+    if (isEnter) {
+      return KeyEventResult.handled;
+    }
+
+    return KeyEventResult.ignored;
+  }
+
   String normalizeText(String value) {
     return value
         .trim()
@@ -235,14 +306,18 @@ class _DopMasterAutocompleteState
 
   @override
   Widget build(BuildContext context) {
-    return RawAutocomplete<Map<String, dynamic>>(
-      textEditingController: widget.controller,
-      focusNode: focusNode,
-      displayStringForOption: displayStringForOption,
-      optionsBuilder: buildSuggestions,
-      onSelected: handleSelected,
-      fieldViewBuilder: buildField,
-      optionsViewBuilder: buildOptionsView,
+    return Focus(
+      canRequestFocus: false,
+      onKeyEvent: handleKeyboardEvent,
+      child: RawAutocomplete< Map<String, dynamic>>(
+        textEditingController: widget.controller,
+        focusNode: focusNode,
+        displayStringForOption: displayStringForOption,
+        optionsBuilder: buildSuggestions,
+        onSelected: handleSelected,
+        fieldViewBuilder: buildField,
+        optionsViewBuilder: buildOptionsView,
+      ),
     );
   }
 
