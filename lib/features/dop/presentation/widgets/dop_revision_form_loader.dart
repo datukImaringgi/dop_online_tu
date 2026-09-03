@@ -63,7 +63,7 @@ class _DopRevisionFormLoaderState
       return;
     }
 
-    loadRevision();
+    reloadRevision();
   }
 
   void handleHeaderChanged(
@@ -87,6 +87,8 @@ class _DopRevisionFormLoaderState
   }
 
   Future<void> reloadRevision() async {
+    hasDeliveredRevision = false;
+
     await ref
         .read(
       dopRevisionFormControllerProvider(
