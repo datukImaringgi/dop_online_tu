@@ -9,6 +9,7 @@ import 'package:data_table_2/data_table_2.dart';
 import '../data/dop_approval_action_repository.dart';
 import '../data/dop_approval_provider.dart';
 import '../../../shared/providers/user_session_provider.dart';
+import '../../dop/data/dop_list_provider.dart';
 
 class DopApprovalDetailPage
     extends ConsumerWidget {
@@ -559,32 +560,65 @@ class DopApprovalDetailPage
               horizontal: 16,
               vertical: 10,
             ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.list_alt_outlined,
-                        color: Color(0xFF0D6EFD),
-                        size: 20,
-                      ),
-                      const SizedBox(width: 9),
-                      Text(
-                        'Daftar Aktivitas (${details.length})',
+            child: LayoutBuilder(
+              builder: (
+                  BuildContext context,
+                  BoxConstraints constraints,
+                  ) {
+                final title = Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.list_alt_outlined,
+                      color: Color(0xFF0D6EFD),
+                      size: 20,
+                    ),
+                    const SizedBox(width: 9),
+                    Flexible(
+                      child: Text(
+                        'Daftar Aktivitas '
+                            '(${details.length})',
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           color: Color(0xFF0F172A),
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                    ],
-                  ),
-                ),
+                    ),
+                  ],
+                );
+
+                final actionBar =
                 DopApprovalActionBar(
                   approvalItem: approvalItem,
-                ),
-              ],
+                );
+
+                if (constraints.maxWidth >= 980) {
+                  return Row(
+                    children: [
+                      Expanded(
+                        child: title,
+                      ),
+                      const SizedBox(width: 12),
+                      actionBar,
+                    ],
+                  );
+                }
+
+                return Column(
+                  crossAxisAlignment:
+                  CrossAxisAlignment.start,
+                  children: [
+                    title,
+                    const SizedBox(height: 10),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: actionBar,
+                    ),
+                  ],
+                );
+              },
             ),
           ),
           const Divider(
@@ -884,8 +918,7 @@ class DopApprovalActionBar
   }
 }
 
-class _DopApprovalActionBarState
-    extends ConsumerState<DopApprovalActionBar> {
+class _DopApprovalActionBarState extends ConsumerState<DopApprovalActionBar> {
   bool isProcessing = false;
 
   Future<void> handleApprove() async {
@@ -1085,6 +1118,90 @@ class _DopApprovalActionBarState
     }
   }
 
+  Future<void> handleRejectDop() async {
+    if (isProcessing) {
+      return;
+    }
+
+    final rejectionNote =
+    await showRejectDialog();
+
+    if (rejectionNote == null) {
+      return;
+    }
+
+    setState(() {
+      isProcessing = true;
+    });
+
+    try {
+      final repository = ref.read(
+        dopApprovalActionRepositoryProvider,
+      );
+
+      await repository.rejectDop(
+        dopHeaderId:
+        widget.approvalItem.dopHeaderId,
+        note: rejectionNote,
+      );
+
+      ref.invalidate(
+        dopApprovalListProvider,
+      );
+
+      ref.invalidate(
+        pendingApprovalCountProvider,
+      );
+
+      ref.invalidate(
+        dopApprovalDetailProvider(
+          widget.approvalItem.dopHeaderId,
+        ),
+      );
+
+      ref.invalidate(
+        dopListProvider,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      final messenger =
+      ScaffoldMessenger.of(context);
+
+      context.go('/approval');
+
+      messenger.showSnackBar(
+        SnackBar(
+          backgroundColor:
+          const Color(0xFFDC2626),
+          duration: const Duration(
+            seconds: 5,
+          ),
+          content: Text(
+            'DOP ${widget.approvalItem.dopNumber} '
+                'telah ditolak.',
+          ),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      showErrorMessage(
+        extractErrorMessage(error),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          isProcessing = false;
+        });
+      }
+    }
+  }
+
   Future<String?> showRevisionDialog() async {
     final noteController =
     TextEditingController();
@@ -1196,6 +1313,167 @@ class _DopApprovalActionBarState
     );
 
     return result;
+  }
+
+  Future<String?> showRejectDialog() async {
+    final noteController =
+    TextEditingController();
+
+    final formKey =
+    GlobalKey<FormState>();
+
+    final result =
+    await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (
+          BuildContext dialogContext,
+          ) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.white,
+          title: const Row(
+            children: [
+              Icon(
+                Icons.cancel_outlined,
+                color: Color(0xFFDC2626),
+                size: 22,
+              ),
+              SizedBox(width: 9),
+              Text(
+                'Reject DOP',
+                style: TextStyle(
+                  color: Color(0xFF0F172A),
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          content: SizedBox(
+            width: 460,
+            child: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize:
+                MainAxisSize.min,
+                crossAxisAlignment:
+                CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: double.infinity,
+                    padding:
+                    const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color:
+                      const Color(0xFFFEF2F2),
+                      borderRadius:
+                      BorderRadius.circular(10),
+                      border: Border.all(
+                        color:
+                        const Color(0xFFFECACA),
+                      ),
+                    ),
+                    child: Text(
+                      'DOP ${widget.approvalItem.dopNumber} '
+                          'akan ditolak secara final dan tidak '
+                          'dapat dikirim ulang melalui menu Revisi DOP.',
+                      style: const TextStyle(
+                        color: Color(0xFF991B1B),
+                        fontSize: 12.5,
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: noteController,
+                    autofocus: true,
+                    minLines: 3,
+                    maxLines: 5,
+                    textCapitalization:
+                    TextCapitalization.sentences,
+                    decoration: InputDecoration(
+                      labelText:
+                      'Alasan Reject DOP',
+                      hintText:
+                      'Jelaskan alasan DOP ditolak',
+                      alignLabelWithHint: true,
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius:
+                        BorderRadius.circular(10),
+                      ),
+                    ),
+                    validator: validateRejectNote,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(
+                  dialogContext,
+                ).pop();
+              },
+              child: const Text('Batal'),
+            ),
+            FilledButton.icon(
+              onPressed: () {
+                final isValid =
+                    formKey.currentState
+                        ?.validate() ??
+                        false;
+
+                if (!isValid) {
+                  return;
+                }
+
+                Navigator.of(
+                  dialogContext,
+                ).pop(
+                  noteController.text.trim(),
+                );
+              },
+              style: FilledButton.styleFrom(
+                backgroundColor:
+                const Color(0xFFDC2626),
+                foregroundColor: Colors.white,
+              ),
+              icon: const Icon(
+                Icons.cancel_outlined,
+                size: 18,
+              ),
+              label: const Text(
+                'Reject DOP',
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    noteController.dispose();
+
+    return result;
+  }
+
+  String? validateRejectNote(
+      String? value,
+      ) {
+    if (value == null ||
+        value.trim().isEmpty) {
+      return 'Alasan Reject DOP wajib diisi';
+    }
+
+    if (value.trim().length < 5) {
+      return 'Alasan reject minimal 5 karakter';
+    }
+
+    return null;
   }
 
   Widget buildConfirmationDialog(
@@ -1326,91 +1604,132 @@ class _DopApprovalActionBarState
         ? 'Setujui Layer 3'
         : 'Setujui Layer 4';
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const Icon(
-          Icons.info_outline,
-          color: Color(0xFF64748B),
-          size: 17,
-        ),
-        const SizedBox(width: 7),
-        const Text(
-          'Pastikan seluruh aktivitas telah diperiksa.',
-          maxLines: 1,
-          softWrap: false,
-          style: TextStyle(
-            color: Color(0xFF64748B),
-            fontSize: 11.5,
+    return ConstrainedBox(
+      constraints: const BoxConstraints(
+        maxWidth: 720,
+      ),
+      child: Wrap(
+        alignment: WrapAlignment.end,
+        crossAxisAlignment:
+        WrapCrossAlignment.center,
+        spacing: 10,
+        runSpacing: 8,
+        children: [
+          const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.info_outline,
+                color: Color(0xFF64748B),
+                size: 17,
+              ),
+              SizedBox(width: 7),
+              Text(
+                'Pastikan seluruh aktivitas '
+                    'telah diperiksa.',
+                style: TextStyle(
+                  color: Color(0xFF64748B),
+                  fontSize: 11.5,
+                ),
+              ),
+            ],
           ),
-        ),
-        const SizedBox(width: 16),
-        OutlinedButton.icon(
-          onPressed: isProcessing
-              ? null
-              : handleReturnForRevision,
-          style: OutlinedButton.styleFrom(
-            minimumSize: const Size(0, 36),
-            padding: const EdgeInsets.symmetric(
-              horizontal: 14,
-              vertical: 8,
+          OutlinedButton.icon(
+            onPressed: isProcessing
+                ? null
+                : handleReturnForRevision,
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size(0, 36),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 8,
+              ),
+              foregroundColor:
+              const Color(0xFFB45309),
+              side: const BorderSide(
+                color: Color(0xFFF59E0B),
+              ),
+              textStyle: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
             ),
-            foregroundColor:
-            const Color(0xFFB45309),
-            side: const BorderSide(
-              color: Color(0xFFF59E0B),
+            icon: const Icon(
+              Icons.assignment_return_outlined,
+              size: 17,
             ),
-            textStyle: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          icon: const Icon(
-            Icons.assignment_return_outlined,
-            size: 17,
-          ),
-          label: const Text(
-            'Kembalikan untuk Revisi',
-          ),
-        ),
-        const SizedBox(width: 10),
-        FilledButton.icon(
-          onPressed: isProcessing
-              ? null
-              : handleApprove,
-          style: FilledButton.styleFrom(
-            minimumSize: const Size(0, 36),
-            padding: const EdgeInsets.symmetric(
-              horizontal: 14,
-              vertical: 8,
-            ),
-            backgroundColor:
-            const Color(0xFF059669),
-            textStyle: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
+            label: const Text(
+              'Kembalikan untuk Revisi',
             ),
           ),
-          icon: isProcessing
-              ? const SizedBox(
-            width: 15,
-            height: 15,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: Colors.white,
+          OutlinedButton.icon(
+            onPressed: isProcessing
+                ? null
+                : handleRejectDop,
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size(0, 36),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 8,
+              ),
+              foregroundColor:
+              const Color(0xFFDC2626),
+              backgroundColor:
+              const Color(0xFFFEF2F2),
+              side: const BorderSide(
+                color: Color(0xFFFCA5A5),
+              ),
+              textStyle: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
             ),
-          )
-              : const Icon(
-            Icons.check_circle_outline,
-            size: 17,
+            icon: const Icon(
+              Icons.cancel_outlined,
+              size: 17,
+            ),
+            label: const Text(
+              'Reject DOP',
+            ),
           ),
-          label: Text(
-            isProcessing
-                ? 'Memproses...'
-                : buttonLabel,
+          FilledButton.icon(
+            onPressed:
+            isProcessing ? null : handleApprove,
+            style: FilledButton.styleFrom(
+              minimumSize: const Size(0, 36),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 8,
+              ),
+              backgroundColor:
+              const Color(0xFF059669),
+              textStyle: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            icon: isProcessing
+                ? const SizedBox(
+              width: 15,
+              height: 15,
+              child:
+              CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.white,
+              ),
+            )
+                : const Icon(
+              Icons.check_circle_outline,
+              size: 17,
+            ),
+            label: Text(
+              isProcessing
+                  ? 'Memproses...'
+                  : buttonLabel,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

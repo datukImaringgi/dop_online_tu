@@ -102,6 +102,38 @@ class DopApprovalActionRepository {
       },
     );
   }
+
+  Future<void> rejectDop({
+    required String dopHeaderId,
+    required String note,
+  }) async {
+    final cleanedDopHeaderId =
+    dopHeaderId.trim();
+
+    final cleanedNote =
+    note.trim();
+
+    if (cleanedDopHeaderId.isEmpty) {
+      throw Exception(
+        'DOP yang akan ditolak tidak valid.',
+      );
+    }
+
+    if (cleanedNote.isEmpty) {
+      throw Exception(
+        'Alasan Reject DOP wajib diisi.',
+      );
+    }
+
+    await supabase.rpc(
+      'reject_dop_final',
+      params: {
+        'p_dop_header_id':
+        cleanedDopHeaderId,
+        'p_note': cleanedNote,
+      },
+    );
+  }
 }
 
 DopApprovalActionRepository
