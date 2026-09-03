@@ -228,6 +228,7 @@ class _VerticalDivider
 class DashboardAchievementSection extends StatelessWidget {
   final int totalDop;
   final int approvedCount;
+  final int rejectedCount;
   final int revisionCount;
   final double approvalRate;
   final int pendingLayer3Count;
@@ -238,6 +239,7 @@ class DashboardAchievementSection extends StatelessWidget {
     super.key,
     required this.totalDop,
     required this.approvedCount,
+    required this.rejectedCount,
     required this.revisionCount,
     required this.approvalRate,
     required this.pendingLayer3Count,
@@ -318,6 +320,7 @@ class DashboardAchievementSection extends StatelessWidget {
               pendingLayer3: pendingLayer3Count,
               pendingLayer4: pendingLayer4Count,
               revision: revisionStatusCount,
+              rejected: rejectedCount,
             ),
           ),
         ],
@@ -440,12 +443,14 @@ class _AchievementStatusChart
   final int pendingLayer3;
   final int pendingLayer4;
   final int revision;
+  final int rejected;
 
   const _AchievementStatusChart({
     required this.approved,
     required this.pendingLayer3,
     required this.pendingLayer4,
     required this.revision,
+    required this.rejected,
   });
 
   @override
@@ -462,6 +467,10 @@ class _AchievementStatusChart
 
     if (revision > maximumValue) {
       maximumValue = revision;
+    }
+
+    if (rejected > maximumValue) {
+      maximumValue = rejected;
     }
 
     if (maximumValue <= 0) {
@@ -516,6 +525,12 @@ class _AchievementStatusChart
                   value: revision,
                   maximumValue: maximumValue,
                   color: const Color(0xFFEA580C),
+                ),
+                _buildBar(
+                  label: 'Rejected',
+                  value: rejected,
+                  maximumValue: maximumValue,
+                  color: const Color(0xFFDC2626),
                 ),
               ],
             ),

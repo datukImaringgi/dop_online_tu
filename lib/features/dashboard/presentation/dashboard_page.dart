@@ -630,6 +630,9 @@ class _DashboardPageState
     final approvedCount =
         metrics.approved;
 
+    final rejectedCount =
+        metrics.rejected;
+
     final pendingLayer3Count =
         metrics.pendingLayer3;
 
@@ -730,6 +733,7 @@ class _DashboardPageState
                       child: DashboardAchievementSection(
                         totalDop: totalDop,
                         approvedCount: approvedCount,
+                        rejectedCount: rejectedCount,
                         revisionCount: revisionCount,
                         approvalRate: approvalRate,
                         pendingLayer3Count: pendingLayer3Count,

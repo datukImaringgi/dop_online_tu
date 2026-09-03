@@ -92,6 +92,7 @@ class DashboardTransportAreaRow {
 class DashboardMetrics {
   final int totalDop;
   final int approved;
+  final int rejected;
   final int pendingLayer3;
   final int pendingLayer4;
   final int revisionRequired;
@@ -102,6 +103,7 @@ class DashboardMetrics {
   const DashboardMetrics({
     required this.totalDop,
     required this.approved,
+    required this.rejected,
     required this.pendingLayer3,
     required this.pendingLayer4,
     required this.revisionRequired,
@@ -122,6 +124,7 @@ class DashboardMetrics {
     return const DashboardMetrics(
       totalDop: 0,
       approved: 0,
+      rejected: 0,
       pendingLayer3: 0,
       pendingLayer4: 0,
       revisionRequired: 0,
@@ -157,6 +160,7 @@ class DashboardCalculation {
     }
 
     var approved = 0;
+    var rejected = 0;
     var pendingLayer3 = 0;
     var pendingLayer4 = 0;
     var revisionRequired = 0;
@@ -172,6 +176,10 @@ class DashboardCalculation {
 
       if (status == 'approved') {
         approved++;
+      }
+
+      if (status == 'rejected') {
+        rejected++;
       }
 
       if (status == 'pending_layer_3') {
@@ -282,6 +290,7 @@ class DashboardCalculation {
     final metrics = DashboardMetrics(
       totalDop: uniqueDopItems.length,
       approved: approved,
+      rejected: rejected,
       pendingLayer3: pendingLayer3,
       pendingLayer4: pendingLayer4,
       revisionRequired: revisionRequired,
