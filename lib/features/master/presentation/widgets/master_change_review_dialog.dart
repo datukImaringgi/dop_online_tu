@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/master_change_request_provider.dart';
 import '../../data/master_unit_provider.dart';
 import '../../domain/master_change_request_model.dart';
+import '../../data/company_user_hierarchy_provider.dart';
 
 class MasterChangeReviewDialog
     extends ConsumerStatefulWidget {
@@ -123,6 +124,8 @@ class _MasterChangeReviewDialogState extends ConsumerState< MasterChangeReviewDi
       final result =
       await repository.reviewRequest(
         requestId: widget.request.id,
+        masterType:
+        widget.request.masterType,
         decision: decision,
         reviewNote:
         reviewNoteController.text.trim(),
@@ -138,6 +141,10 @@ class _MasterChangeReviewDialogState extends ConsumerState< MasterChangeReviewDi
 
       ref.invalidate(
         masterUnitsProvider,
+      );
+
+      ref.invalidate(
+        companyUserHierarchyProvider,
       );
 
       if (!mounted) {
@@ -564,6 +571,38 @@ class _MasterDataPanel
       return 'Status';
     }
 
+    if (key == 'full_name') {
+      return 'Nama Lengkap';
+    }
+
+    if (key == 'sid') {
+      return 'SID';
+    }
+
+    if (key == 'password') {
+      return 'Password Sementara';
+    }
+
+    if (key == 'notification_email') {
+      return 'Email Notifikasi';
+    }
+
+    if (key == 'hierarchy_layer') {
+      return 'Hierarchy';
+    }
+
+    if (key == 'position') {
+      return 'Position';
+    }
+
+    if (key == 'department') {
+      return 'Department';
+    }
+
+    if (key == 'auth_email') {
+      return 'Email Login';
+    }
+
     return key;
   }
 
@@ -573,6 +612,10 @@ class _MasterDataPanel
       ) {
     if (value == null) {
       return '-';
+    }
+
+    if (key == 'hierarchy_layer') {
+      return 'Layer $value';
     }
 
     if (key == 'unit_type') {

@@ -303,12 +303,17 @@ class MasterChangeReviewResult {
     return MasterChangeReviewResult(
       resultType:
       map['result_type'] as String? ??
+          map['resultType'] as String? ??
           'unknown',
       requestId:
       map['request_id'] as String? ??
+          map['requestId'] as String? ??
           '',
       targetRecordId:
-      map['target_record_id'] as String?,
+      map['target_record_id']
+      as String? ??
+          map['targetRecordId']
+          as String?,
       message:
       map['message'] as String? ??
           'Request berhasil diproses.',

@@ -305,7 +305,7 @@ class MasterChangeRequestRepository {
   }
 
   Future<MasterChangeReviewResult>
-  reviewRequest({
+  reviewUnitRequest({
     required String requestId,
     required String decision,
     String? reviewNote,
@@ -320,6 +320,100 @@ class MasterChangeRequestRepository {
     );
 
     return parseReviewResult(response);
+  }
+
+  Future<MasterChangeReviewResult>
+  reviewUserRequest({
+    required String requestId,
+    required String decision,
+    String? reviewNote,
+  }) async {
+    final response =
+    await supabase.functions.invoke(
+      'review-master-user',
+      body: {
+        'requestId': requestId,
+        'decision': decision,
+        'reviewNote': reviewNote,
+      },
+    );
+
+    final responseData =
+    extractFunctionResponse(
+      response.data,
+    );
+
+    final success =
+        responseData['success'] as bool? ??
+            false;
+
+    if (!success) {
+      final message =
+          responseData['message']
+          as String? ??
+              'Approval Master User gagal.';
+
+      throw Exception(message);
+    }
+
+    return parseReviewResult(
+      responseData,
+    );
+  }
+
+  Map<String, dynamic>
+  extractFunctionResponse(
+      dynamic response,
+      ) {
+    if (response is Map<String, dynamic>) {
+      return response;
+    }
+
+    if (response is Map) {
+      final normalized =
+      <String, dynamic>{};
+
+      for (final entry in response.entries) {
+        normalized[
+        entry.key.toString()
+        ] = entry.value;
+      }
+
+      return normalized;
+    }
+
+    throw Exception(
+      'Respons Approval Master User '
+          'tidak valid.',
+    );
+  }
+
+  Future<MasterChangeReviewResult>
+  reviewRequest({
+    required String requestId,
+    required String masterType,
+    required String decision,
+    String? reviewNote,
+  }) async {
+    if (masterType == 'unit') {
+      return reviewUnitRequest(
+        requestId: requestId,
+        decision: decision,
+        reviewNote: reviewNote,
+      );
+    }
+
+    if (masterType == 'user_assignment') {
+      return reviewUserRequest(
+        requestId: requestId,
+        decision: decision,
+        reviewNote: reviewNote,
+      );
+    }
+
+    throw Exception(
+      'Jenis Master Data belum didukung.',
+    );
   }
 
   MasterChangeReviewResult parseReviewResult(
