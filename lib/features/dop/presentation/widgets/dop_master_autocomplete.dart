@@ -53,6 +53,9 @@ class _DopMasterAutocompleteState
 
   bool isSynchronizingController = false;
 
+  final ValueNotifier<int> highlightedIndex =
+  ValueNotifier<int>(0);
+
   @override
   void initState() {
     super.initState();
@@ -81,6 +84,7 @@ class _DopMasterAutocompleteState
   @override
   void dispose() {
     widget.controller.removeListener(handleTextChanged);
+    highlightedIndex.dispose();
     focusNode.dispose();
     super.dispose();
   }
@@ -129,6 +133,8 @@ class _DopMasterAutocompleteState
       return;
     }
 
+    highlightedIndex.value = 0;
+
     if (widget.selectedId == null) {
       return;
     }
@@ -140,8 +146,11 @@ class _DopMasterAutocompleteState
       return;
     }
 
-    final selectedText = widget.displayBuilder(selectedItem);
-    final currentText = widget.controller.text.trim();
+    final selectedText =
+    widget.displayBuilder(selectedItem);
+
+    final currentText =
+    widget.controller.text.trim();
 
     if (currentText != selectedText.trim()) {
       widget.onSelectionCleared();
@@ -221,6 +230,8 @@ class _DopMasterAutocompleteState
         event.logicalKey ==
             LogicalKeyboardKey.tab;
 
+    // Arrow Up dan Arrow Down ditangani oleh
+    // navigasi internal RawAutocomplete.
     if (!isEnter && !isTab) {
       return KeyEventResult.ignored;
     }
@@ -229,19 +240,31 @@ class _DopMasterAutocompleteState
       return KeyEventResult.ignored;
     }
 
-    final firstSuggestion =
-    findFirstVisibleSuggestion();
+    final suggestions = buildSuggestions(
+      widget.controller.value,
+    ).toList();
 
-    if (firstSuggestion == null) {
+    if (suggestions.isEmpty) {
       return KeyEventResult.ignored;
     }
 
-    handleSelected(firstSuggestion);
+    var selectedIndex = highlightedIndex.value;
+
+    if (selectedIndex < 0 ||
+        selectedIndex >= suggestions.length) {
+      selectedIndex = 0;
+    }
+
+    handleSelected(
+      suggestions[selectedIndex],
+    );
 
     if (isEnter) {
       return KeyEventResult.handled;
     }
 
+    // Tab tetap diteruskan agar fokus pindah
+    // ke field berikutnya setelah item dipilih.
     return KeyEventResult.ignored;
   }
 
@@ -307,7 +330,7 @@ class _DopMasterAutocompleteState
   @override
   Widget build(BuildContext context) {
     return Focus(
-      canRequestFocus: false,
+      canRequestFocus: true,
       onKeyEvent: handleKeyboardEvent,
       child: RawAutocomplete< Map<String, dynamic>>(
         textEditingController: widget.controller,
@@ -348,7 +371,8 @@ class _DopMasterAutocompleteState
 
   Widget buildOptionsView(
       BuildContext context,
-      AutocompleteOnSelected<Map<String, dynamic>> onSelected,
+      AutocompleteOnSelected<Map<String, dynamic>>
+      onSelected,
       Iterable<Map<String, dynamic>> options,
       ) {
     final optionList = options.toList();
@@ -377,18 +401,44 @@ class _DopMasterAutocompleteState
             itemCount: optionList.length,
             separatorBuilder: buildSeparator,
             itemBuilder: (
-                BuildContext context,
+                BuildContext itemContext,
                 int index,
                 ) {
               final item = optionList[index];
 
-              return InkWell(
-                onTap: () {
-                  onSelected(item);
-                },
-                child: widget.suggestionBuilder(
-                  context,
-                  item,
+              final currentHighlightedIndex =
+              AutocompleteHighlightedOption.of(
+                itemContext,
+              );
+
+              if (highlightedIndex.value !=
+                  currentHighlightedIndex) {
+                WidgetsBinding.instance
+                    .addPostFrameCallback((_) {
+                  if (!mounted) {
+                    return;
+                  }
+
+                  highlightedIndex.value =
+                      currentHighlightedIndex;
+                });
+              }
+
+              final isHighlighted =
+                  currentHighlightedIndex == index;
+
+              return Container(
+                color: isHighlighted
+                    ? const Color(0xFFE0F2FE)
+                    : Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    onSelected(item);
+                  },
+                  child: widget.suggestionBuilder(
+                    itemContext,
+                    item,
+                  ),
                 ),
               );
             },

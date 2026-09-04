@@ -120,6 +120,32 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
     return '$year-$month-$day';
   }
 
+  DateTime? parseExpiryDate(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return null;
+    }
+
+    return DateTime.tryParse(value);
+  }
+
+  bool isExpiredDate(DateTime expiryDate) {
+    final now = DateTime.now();
+
+    final today = DateTime(
+      now.year,
+      now.month,
+      now.day,
+    );
+
+    final normalizedExpiry = DateTime(
+      expiryDate.year,
+      expiryDate.month,
+      expiryDate.day,
+    );
+
+    return normalizedExpiry.isBefore(today);
+  }
+
   String formatTimeOfDay(TimeOfDay time) {
     final hour = time.hour.toString().padLeft(2, '0');
     final minute = time.minute.toString().padLeft(2, '0');
@@ -870,6 +896,34 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
         selectedJsa == null ||
         selectedControlRoom == null) {
       showMessage('Data master aktivitas tidak valid');
+      return;
+    }
+
+    final sidExpiredDate = parseExpiryDate(
+      selectedDriver['sid_expired_date'] as String?,
+    );
+
+    if (sidExpiredDate != null &&
+        isExpiredDate(sidExpiredDate)) {
+      showMessage(
+        'SID Driver "${selectedDriver['driver_name']}" '
+            'telah expired pada '
+            '${formatDate(sidExpiredDate)}.',
+      );
+      return;
+    }
+
+    final simperExpiredDate = parseExpiryDate(
+      selectedDriver['simper_expired_date'] as String?,
+    );
+
+    if (simperExpiredDate != null &&
+        isExpiredDate(simperExpiredDate)) {
+      showMessage(
+        'SIMPER Driver "${selectedDriver['driver_name']}" '
+            'telah expired pada '
+            '${formatDate(simperExpiredDate)}.',
+      );
       return;
     }
 

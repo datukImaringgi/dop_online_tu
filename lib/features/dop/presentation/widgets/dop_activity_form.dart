@@ -112,6 +112,34 @@ class DopActivityForm extends StatelessWidget {
     required this.onAddOrUpdate,
   });
 
+  bool isExpired(String? dateValue) {
+    if (dateValue == null || dateValue.trim().isEmpty) {
+      return false;
+    }
+
+    final date = DateTime.tryParse(dateValue);
+
+    if (date == null) {
+      return false;
+    }
+
+    final now = DateTime.now();
+
+    final today = DateTime(
+      now.year,
+      now.month,
+      now.day,
+    );
+
+    final expiredDate = DateTime(
+      date.year,
+      date.month,
+      date.day,
+    );
+
+    return expiredDate.isBefore(today);
+  }
+
   String? validateObserver(String? value) {
     if (value == null || value.trim().isEmpty) {
       return 'Observer wajib diisi';
@@ -423,6 +451,17 @@ class DopActivityForm extends StatelessWidget {
       BuildContext context,
       Map<String, dynamic> item,
       ) {
+    final sidExpired = isExpired(
+      item['sid_expired_date'] as String?,
+    );
+
+    final simperExpired = isExpired(
+      item['simper_expired_date'] as String?,
+    );
+
+    final isDriverExpired =
+        sidExpired || simperExpired;
+
     final driverName =
         item['driver_name'] as String? ?? '-';
 
@@ -463,9 +502,13 @@ class DopActivityForm extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  driverName,
-                  style: const TextStyle(
-                    color: Color(0xFF0F172A),
+                  isDriverExpired
+                      ? '$driverName [EXPIRED]'
+                      : driverName,
+                  style: TextStyle(
+                    color: isDriverExpired
+                        ? Colors.red
+                        : const Color(0xFF0F172A),
                     fontSize: 11.5,
                     fontWeight: FontWeight.bold,
                   ),
