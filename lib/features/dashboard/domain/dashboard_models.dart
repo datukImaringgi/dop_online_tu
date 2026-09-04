@@ -40,18 +40,11 @@ class DashboardComplianceRow {
   }
 
   double get compliancePercentage {
-    final totalOverdue =
-        overdueTwo + overdueTwelve;
-
-    if (totalOverdue == 0) {
-      if (comply > 0) {
-        return 100;
-      }
-
+    if (total == 0) {
       return 0;
     }
 
-    return comply / totalOverdue * 100;
+    return comply / total * 100;
   }
 
   String get compliancePercentageText {

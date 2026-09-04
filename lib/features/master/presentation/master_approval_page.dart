@@ -21,6 +21,8 @@ class MasterApprovalPage
 class _MasterApprovalPageState
     extends ConsumerState<MasterApprovalPage> {
   String selectedStatus = 'pending';
+  String? selectedCompanyId;
+  String selectedMasterType = 'all';
 
   void handleStatusChanged(String? value) {
     if (value == null) {
@@ -29,6 +31,26 @@ class _MasterApprovalPageState
 
     setState(() {
       selectedStatus = value;
+    });
+  }
+
+  void handleCompanyChanged(
+      String? value,
+      ) {
+    setState(() {
+      selectedCompanyId = value;
+    });
+  }
+
+  void handleMasterTypeChanged(
+      String? value,
+      ) {
+    if (value == null) {
+      return;
+    }
+
+    setState(() {
+      selectedMasterType = value;
     });
   }
 
@@ -70,21 +92,105 @@ class _MasterApprovalPageState
     );
   }
 
+  Map<String, String> buildCompanyOptions(
+      List<MasterChangeRequestModel> requests,
+      ) {
+    final options = <String, String>{};
+
+    for (final request in requests) {
+      final companyId =
+      request.companyId.trim();
+
+      final companyName =
+      request.companyName.trim();
+
+      if (companyId.isEmpty ||
+          companyName.isEmpty ||
+          companyName == '-') {
+        continue;
+      }
+
+      options[companyId] = companyName;
+    }
+
+    return options;
+  }
+
+  List<DropdownMenuItem<String?>>
+  buildCompanyDropdownItems(
+      Map<String, String> options,
+      ) {
+    final items =
+    <DropdownMenuItem<String?>>[
+      const DropdownMenuItem<String?>(
+        value: null,
+        child: Text('Semua Perusahaan'),
+      ),
+    ];
+
+    final companyIds =
+    options.keys.toList();
+
+    companyIds.sort(
+          (
+          String firstId,
+          String secondId,
+          ) {
+        final firstName =
+            options[firstId] ?? '';
+
+        final secondName =
+            options[secondId] ?? '';
+
+        return firstName.compareTo(
+          secondName,
+        );
+      },
+    );
+
+    for (final companyId in companyIds) {
+      items.add(
+        DropdownMenuItem<String?>(
+          value: companyId,
+          child: Text(
+            options[companyId] ?? '-',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      );
+    }
+
+    return items;
+  }
+
   List<MasterChangeRequestModel>
   filterRequests(
       List<MasterChangeRequestModel> requests,
       ) {
-    if (selectedStatus == 'all') {
-      return requests;
-    }
-
     final filteredRequests =
     <MasterChangeRequestModel>[];
 
     for (final request in requests) {
-      if (request.status == selectedStatus) {
-        filteredRequests.add(request);
+      if (selectedStatus != 'all' &&
+          request.status != selectedStatus) {
+        continue;
       }
+
+      if (selectedCompanyId != null &&
+          selectedCompanyId!.isNotEmpty &&
+          request.companyId !=
+              selectedCompanyId) {
+        continue;
+      }
+
+      if (selectedMasterType != 'all' &&
+          request.masterType !=
+              selectedMasterType) {
+        continue;
+      }
+
+      filteredRequests.add(request);
     }
 
     return filteredRequests;
@@ -117,8 +223,11 @@ class _MasterApprovalPageState
           children: [
             _buildPageHeader(
               canReview: canReview,
+              requests:
+              requestsAsync.value ??
+                  <MasterChangeRequestModel>[],
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 12),
             Expanded(
               child: requestsAsync.when(
                 loading: buildLoading,
@@ -139,25 +248,75 @@ class _MasterApprovalPageState
     );
   }
 
+  InputDecoration buildFilterDecoration({
+    required String label,
+    required IconData icon,
+  }) {
+    return InputDecoration(
+      labelText: label,
+      isDense: true,
+      prefixIcon: Icon(
+        icon,
+        size: 16,
+      ),
+      prefixIconConstraints:
+      const BoxConstraints(
+        minWidth: 34,
+        minHeight: 34,
+      ),
+      contentPadding:
+      const EdgeInsets.symmetric(
+        horizontal: 10,
+        vertical: 9,
+      ),
+      labelStyle: const TextStyle(
+        color: Color(0xFF64748B),
+        fontSize: 9.5,
+      ),
+      border: OutlineInputBorder(
+        borderRadius:
+        BorderRadius.circular(8),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius:
+        BorderRadius.circular(8),
+        borderSide: const BorderSide(
+          color: Color(0xFFCBD5E1),
+        ),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius:
+        BorderRadius.circular(8),
+        borderSide: const BorderSide(
+          color: Color(0xFF2563EB),
+          width: 1.25,
+        ),
+      ),
+    );
+  }
+
   Widget _buildPageHeader({
     required bool canReview,
+    required List<MasterChangeRequestModel>
+    requests,
   }) {
+    final companyOptions =
+    buildCompanyOptions(requests);
     return Row(
       crossAxisAlignment:
       CrossAxisAlignment.start,
       children: [
         Expanded(
           child: Column(
-            crossAxisAlignment:
-            CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 canReview
                     ? 'Approval Master Data'
                     : 'Status Pengajuan Master Data',
-                style: TextStyle(
+                style: const TextStyle(
                   color: Color(0xFF0F172A),
-                  fontSize: 26,
+                  fontSize: 24,
                   height: 1.1,
                   fontWeight: FontWeight.bold,
                 ),
@@ -169,40 +328,101 @@ class _MasterApprovalPageState
                     'yang diajukan admin perusahaan.'
                     : 'Pantau status perubahan Master Data '
                     'yang diajukan perusahaan Anda.',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: Color(0xFF64748B),
-                  fontSize: 13,
+                  fontSize: 12.5,
                 ),
               ),
             ],
           ),
         ),
         SizedBox(
-          width: 165,
+          width: 190,
+          child: DropdownButtonFormField<String?>(
+            value: selectedCompanyId,
+            isExpanded: true,
+            decoration: buildFilterDecoration(
+              label: 'Perusahaan',
+              icon: Icons.business_outlined,
+            ),
+            style: const TextStyle(
+              color: Color(0xFF0F172A),
+              fontSize: 11.5,
+              fontWeight: FontWeight.w500,
+            ),
+            items: buildCompanyDropdownItems(
+              companyOptions,
+            ),
+            onChanged: handleCompanyChanged,
+          ),
+        ),
+
+        const SizedBox(width: 8),
+
+        SizedBox(
+          width: 160,
+          child: DropdownButtonFormField<String>(
+            value: selectedMasterType,
+            isExpanded: true,
+            decoration: buildFilterDecoration(
+              label: 'Master Type',
+              icon: Icons.storage_outlined,
+            ),
+            style: const TextStyle(
+              color: Color(0xFF0F172A),
+              fontSize: 11.5,
+              fontWeight: FontWeight.w500,
+            ),
+            items: const [
+              DropdownMenuItem<String>(
+                value: 'all',
+                child: Text('Semua Master'),
+              ),
+              DropdownMenuItem<String>(
+                value: 'user_assignment',
+                child: Text('User & Hierarchy'),
+              ),
+              DropdownMenuItem<String>(
+                value: 'unit',
+                child: Text('Unit'),
+              ),
+              DropdownMenuItem<String>(
+                value: 'driver',
+                child: Text('Driver'),
+              ),
+              DropdownMenuItem<String>(
+                value: 'route',
+                child: Text('Rute'),
+              ),
+              DropdownMenuItem<String>(
+                value: 'job_site',
+                child: Text('Job Site'),
+              ),
+              DropdownMenuItem<String>(
+                value: 'jsa_procedure',
+                child: Text('JSA'),
+              ),
+              DropdownMenuItem<String>(
+                value: 'control_room',
+                child: Text('RIC'),
+              ),
+            ],
+            onChanged: handleMasterTypeChanged,
+          ),
+        ),
+
+        const SizedBox(width: 8),
+
+        SizedBox(
+          width: 160,
           child: DropdownButtonFormField<String>(
             value: selectedStatus,
             isExpanded: true,
-            decoration: InputDecoration(
-              labelText: 'Status',
-              isDense: true,
-              prefixIcon: const Icon(
-                Icons.filter_alt_outlined,
-                size: 16,
-              ),
-              prefixIconConstraints:
-              const BoxConstraints(
-                minWidth: 34,
-                minHeight: 34,
-              ),
-              contentPadding:
-              const EdgeInsets.symmetric(
-                horizontal: 10,
-                vertical: 9,
-              ),
-              border: OutlineInputBorder(
-                borderRadius:
-                BorderRadius.circular(8),
-              ),
+            decoration: buildFilterDecoration(
+              label: 'Status',
+              icon: Icons.filter_alt_outlined,
             ),
             style: const TextStyle(
               color: Color(0xFF0F172A),
@@ -236,30 +456,30 @@ class _MasterApprovalPageState
             onChanged: handleStatusChanged,
           ),
         ),
+
         const SizedBox(width: 8),
-        SizedBox(
-          height: 36,
-          child: OutlinedButton.icon(
-            onPressed: refreshData,
-            style: OutlinedButton.styleFrom(
-              padding:
-              const EdgeInsets.symmetric(
-                horizontal: 11,
+        Tooltip(
+          message: 'Refresh data',
+          child: SizedBox(
+            width: 36,
+            height: 36,
+            child: OutlinedButton(
+              onPressed: refreshData,
+              style: OutlinedButton.styleFrom(
+                padding: EdgeInsets.zero,
+                foregroundColor:
+                const Color(0xFF475569),
+                side: const BorderSide(
+                  color: Color(0xFFCBD5E1),
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius:
+                  BorderRadius.circular(8),
+                ),
               ),
-              shape: RoundedRectangleBorder(
-                borderRadius:
-                BorderRadius.circular(8),
-              ),
-            ),
-            icon: const Icon(
-              Icons.refresh,
-              size: 16,
-            ),
-            label: const Text(
-              'Refresh',
-              style: TextStyle(
-                fontSize: 11.5,
-                fontWeight: FontWeight.w600,
+              child: const Icon(
+                Icons.refresh,
+                size: 17,
               ),
             ),
           ),
@@ -367,7 +587,7 @@ class _MasterApprovalPageState
                   canReview: canReview,
                 );
               },
-            ),
+            ),  
           ),
         ],
       ),
@@ -506,74 +726,77 @@ class _MasterApprovalTableState
 
   @override
   Widget build(BuildContext context) {
-    return Scrollbar(
-      controller: horizontalController,
-      thumbVisibility: true,
-      trackVisibility: true,
-      interactive: true,
-      scrollbarOrientation:
-      ScrollbarOrientation.bottom,
-      child: SingleChildScrollView(
+    return Align(
+      alignment: Alignment.topLeft,
+      child: Scrollbar(
         controller: horizontalController,
-        scrollDirection: Axis.horizontal,
-        child: Scrollbar(
-          controller: verticalController,
-          thumbVisibility: true,
-          trackVisibility: true,
-          interactive: true,
-          scrollbarOrientation:
-          ScrollbarOrientation.right,
-          child: SingleChildScrollView(
+        thumbVisibility: true,
+        trackVisibility: true,
+        interactive: true,
+        scrollbarOrientation:
+        ScrollbarOrientation.bottom,
+        child: SingleChildScrollView(
+          controller: horizontalController,
+          scrollDirection: Axis.horizontal,
+          child: Scrollbar(
             controller: verticalController,
-            scrollDirection: Axis.vertical,
-            child: DataTable(
-              headingRowHeight: 36,
-              dataRowMinHeight: 40,
-              dataRowMaxHeight: 44,
-              horizontalMargin: 12,
-              columnSpacing: 22,
-              headingRowColor:
-              WidgetStateProperty.all(
-                const Color(0xFFF8FAFC),
+            thumbVisibility: true,
+            trackVisibility: true,
+            interactive: true,
+            scrollbarOrientation:
+            ScrollbarOrientation.right,
+            child: SingleChildScrollView(
+              controller: verticalController,
+              scrollDirection: Axis.vertical,
+              child: DataTable(
+                headingRowHeight: 36,
+                dataRowMinHeight: 40,
+                dataRowMaxHeight: 44,
+                horizontalMargin: 12,
+                columnSpacing: 22,
+                headingRowColor:
+                WidgetStateProperty.all(
+                  const Color(0xFFF8FAFC),
+                ),
+                headingTextStyle:
+                const TextStyle(
+                  color: Color(0xFF334155),
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w700,
+                ),
+                dataTextStyle:
+                const TextStyle(
+                  color: Color(0xFF0F172A),
+                  fontSize: 10.5,
+                ),
+                columns: const [
+                  DataColumn(
+                    label: Text('Tanggal'),
+                  ),
+                  DataColumn(
+                    label: Text('Perusahaan'),
+                  ),
+                  DataColumn(
+                    label: Text('Master'),
+                  ),
+                  DataColumn(
+                    label: Text('Perubahan'),
+                  ),
+                  DataColumn(
+                    label: Text('Target'),
+                  ),
+                  DataColumn(
+                    label: Text('Diajukan Oleh'),
+                  ),
+                  DataColumn(
+                    label: Text('Status'),
+                  ),
+                  DataColumn(
+                    label: Text('Action'),
+                  ),
+                ],
+                rows: buildRows(),
               ),
-              headingTextStyle:
-              const TextStyle(
-                color: Color(0xFF334155),
-                fontSize: 10.5,
-                fontWeight: FontWeight.w700,
-              ),
-              dataTextStyle:
-              const TextStyle(
-                color: Color(0xFF0F172A),
-                fontSize: 10.5,
-              ),
-              columns: const [
-                DataColumn(
-                  label: Text('Tanggal'),
-                ),
-                DataColumn(
-                  label: Text('Perusahaan'),
-                ),
-                DataColumn(
-                  label: Text('Master'),
-                ),
-                DataColumn(
-                  label: Text('Perubahan'),
-                ),
-                DataColumn(
-                  label: Text('Target'),
-                ),
-                DataColumn(
-                  label: Text('Diajukan Oleh'),
-                ),
-                DataColumn(
-                  label: Text('Status'),
-                ),
-                DataColumn(
-                  label: Text('Action'),
-                ),
-              ],
-              rows: buildRows(),
             ),
           ),
         ),
