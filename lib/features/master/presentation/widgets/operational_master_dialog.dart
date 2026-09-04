@@ -1,0 +1,815 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../data/active_companies_provider.dart';
+import '../../data/assignment_job_sites_provider.dart';
+import '../../data/master_change_request_provider.dart';
+import '../../data/operational_master_repository.dart';
+import '../../domain/operational_master_config.dart';
+
+class OperationalMasterDialog
+    extends ConsumerStatefulWidget {
+  final OperationalMasterConfig config;
+  final Map<String, dynamic>? record;
+  final int actorHierarchyLayer;
+  final String? fixedCompanyId;
+  final String? fixedCompanyName;
+
+  const OperationalMasterDialog({
+    super.key,
+    required this.config,
+    required this.record,
+    required this.actorHierarchyLayer,
+    required this.fixedCompanyId,
+    required this.fixedCompanyName,
+  });
+
+  bool get isEditing {
+    return record != null;
+  }
+
+  bool get isLayerFive {
+    return actorHierarchyLayer == 5;
+  }
+
+  @override
+  ConsumerState<OperationalMasterDialog>
+  createState() {
+    return _OperationalMasterDialogState();
+  }
+}
+
+class _OperationalMasterDialogState
+    extends ConsumerState<
+        OperationalMasterDialog> {
+  final formKey = GlobalKey<FormState>();
+
+  final controllers =
+  <String, TextEditingController>{};
+
+  String? selectedCompanyId;
+  String? selectedJobSiteId;
+
+  bool isActive = true;
+  bool isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    final recordCompanyId =
+    widget.record?['company_id'];
+
+    if (widget.isLayerFive) {
+      selectedCompanyId =
+      recordCompanyId is String
+          ? recordCompanyId
+          : null;
+    } else {
+      selectedCompanyId =
+          widget.fixedCompanyId;
+    }
+
+    final recordJobSiteId =
+    widget.record?['job_site_id'];
+
+    selectedJobSiteId =
+    recordJobSiteId is String
+        ? recordJobSiteId
+        : null;
+
+    final recordIsActive =
+    widget.record?['is_active'];
+
+    isActive = recordIsActive is bool
+        ? recordIsActive
+        : true;
+
+    for (final field
+    in widget.config.fields) {
+      if (field.type ==
+          OperationalMasterFieldType.jobSite) {
+        continue;
+      }
+
+      final value =
+      widget.record?[field.key];
+
+      controllers[field.key] =
+          TextEditingController(
+            text: formatInitialValue(value),
+          );
+    }
+  }
+
+  @override
+  void dispose() {
+    for (final controller
+    in controllers.values) {
+      controller.dispose();
+    }
+
+    super.dispose();
+  }
+
+  String formatInitialValue(dynamic value) {
+    if (value == null) {
+      return '';
+    }
+
+    final text = value.toString();
+
+    if (text.length >= 10 &&
+        RegExp(
+          r'^\d{4}-\d{2}-\d{2}',
+        ).hasMatch(text)) {
+      return text.substring(0, 10);
+    }
+
+    return text;
+  }
+
+  void handleCompanyChanged(String? value) {
+    setState(() {
+      selectedCompanyId = value;
+      selectedJobSiteId = null;
+    });
+  }
+
+  void handleJobSiteChanged(String? value) {
+    setState(() {
+      if (value == null || value.isEmpty) {
+        selectedJobSiteId = null;
+        return;
+      }
+
+      selectedJobSiteId = value;
+    });
+  }
+
+  void handleActiveChanged(bool value) {
+    setState(() {
+      isActive = value;
+    });
+  }
+
+  Future<void> selectDate(
+      OperationalMasterFieldConfig field,
+      ) async {
+    final controller =
+    controllers[field.key];
+
+    if (controller == null) {
+      return;
+    }
+
+    final existingDate =
+    DateTime.tryParse(controller.text);
+
+    final result = await showDatePicker(
+      context: context,
+      initialDate:
+      existingDate ?? DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+      helpText: field.label,
+    );
+
+    if (result == null) {
+      return;
+    }
+
+    final year =
+    result.year.toString().padLeft(4, '0');
+
+    final month =
+    result.month.toString().padLeft(2, '0');
+
+    final day =
+    result.day.toString().padLeft(2, '0');
+
+    setState(() {
+      controller.text =
+      '$year-$month-$day';
+    });
+  }
+
+  Map<String, dynamic>
+  buildRequestedData() {
+    final result = <String, dynamic>{
+      'company_id': selectedCompanyId,
+      'is_active': isActive,
+    };
+
+    for (final field in widget.config.fields) {
+      if (field.type ==
+          OperationalMasterFieldType.jobSite) {
+        result[field.key] =
+            selectedJobSiteId;
+        continue;
+      }
+
+      final controller =
+      controllers[field.key];
+
+      if (controller == null) {
+        continue;
+      }
+
+      final value = controller.text.trim();
+
+      result[field.key] =
+      value.isEmpty ? null : value;
+    }
+
+    return result;
+  }
+
+  Future<void> save() async {
+    if (isSaving) {
+      return;
+    }
+
+    final isValid =
+        formKey.currentState?.validate() ??
+            false;
+
+    if (!isValid) {
+      return;
+    }
+
+    final companyId = selectedCompanyId;
+
+    if (companyId == null ||
+        companyId.isEmpty) {
+      showMessage(
+        'Perusahaan wajib dipilih.',
+        true,
+      );
+      return;
+    }
+
+    setState(() {
+      isSaving = true;
+    });
+
+    try {
+      final repository = ref.read(
+        operationalMasterRepositoryProvider,
+      );
+
+      final result =
+      await repository.submitChange(
+        masterType:
+        widget.config.masterType,
+        actionType:
+        widget.isEditing
+            ? 'update'
+            : 'create',
+        targetRecordId:
+        widget.record?['id'] as String?,
+        companyId: companyId,
+        requestedData:
+        buildRequestedData(),
+      );
+
+      ref.invalidate(
+        operationalMasterDataProvider(
+          widget.config.tableName,
+        ),
+      );
+
+      ref.invalidate(
+        masterChangeRequestsProvider,
+      );
+
+      ref.invalidate(
+        pendingMasterChangeCountProvider,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      final messenger =
+      ScaffoldMessenger.of(context);
+
+      Navigator.of(context).pop();
+
+      messenger.showSnackBar(
+        SnackBar(
+          backgroundColor:
+          result.isPendingApproval
+              ? const Color(0xFFD97706)
+              : const Color(0xFF059669),
+          content: Text(result.message),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      showMessage(
+        extractErrorMessage(error),
+        true,
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          isSaving = false;
+        });
+      }
+    }
+  }
+
+  String extractErrorMessage(Object error) {
+    final message = error.toString();
+
+    const prefix =
+        'PostgrestException(message: ';
+
+    if (message.startsWith(prefix)) {
+      final cleaned =
+      message.replaceFirst(prefix, '');
+
+      final commaIndex =
+      cleaned.indexOf(',');
+
+      if (commaIndex > 0) {
+        return cleaned
+            .substring(0, commaIndex)
+            .trim();
+      }
+    }
+
+    return message.replaceFirst(
+      'Exception: ',
+      '',
+    );
+  }
+
+  void showMessage(
+      String message,
+      bool isError,
+      ) {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(
+      SnackBar(
+        backgroundColor: isError
+            ? const Color(0xFFDC2626)
+            : const Color(0xFF059669),
+        content: Text(message),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final companiesAsync = ref.watch(
+      activeCompaniesProvider,
+    );
+
+    AsyncValue<
+        List<AssignmentJobSiteOption>>?
+    jobSitesAsync;
+
+    if (selectedCompanyId != null &&
+        selectedCompanyId!.isNotEmpty &&
+        widget.config.masterType !=
+            'job_site') {
+      jobSitesAsync = ref.watch(
+        assignmentJobSitesProvider(
+          selectedCompanyId!,
+        ),
+      );
+    }
+
+    return AlertDialog(
+      backgroundColor: Colors.white,
+      surfaceTintColor: Colors.white,
+      title: Row(
+        children: [
+          Icon(
+            widget.config.icon,
+            color: const Color(0xFF2563EB),
+            size: 21,
+          ),
+          const SizedBox(width: 9),
+          Text(
+            widget.isEditing
+                ? 'Edit ${widget.config.singularLabel}'
+                : 'Tambah ${widget.config.singularLabel}',
+            style: const TextStyle(
+              color: Color(0xFF0F172A),
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+      content: SizedBox(
+        width: 540,
+        child: Form(
+          key: formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize:
+              MainAxisSize.min,
+              children: [
+                buildCompanyField(
+                  companiesAsync,
+                ),
+                const SizedBox(height: 12),
+                for (final field
+                in widget.config.fields) ...[
+                  buildField(
+                    field,
+                    jobSitesAsync,
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                buildActiveSwitch(),
+              ],
+            ),
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: isSaving
+              ? null
+              : closeDialog,
+          child: const Text('Batal'),
+        ),
+        FilledButton.icon(
+          onPressed:
+          isSaving ? null : save,
+          icon: isSaving
+              ? const SizedBox(
+            width: 15,
+            height: 15,
+            child:
+            CircularProgressIndicator(
+              strokeWidth: 2,
+              color: Colors.white,
+            ),
+          )
+              : const Icon(
+            Icons.save_outlined,
+            size: 17,
+          ),
+          label: Text(
+            isSaving
+                ? 'Memproses...'
+                : widget.isLayerFive
+                ? 'Simpan'
+                : 'Ajukan Perubahan',
+          ),
+        ),
+      ],
+    );
+  }
+
+  void closeDialog() {
+    Navigator.of(context).pop();
+  }
+
+  Widget buildCompanyField(
+      AsyncValue<List<ActiveCompanyOption>>
+      companiesAsync,
+      ) {
+    if (!widget.isLayerFive) {
+      return buildFixedCompany();
+    }
+
+    if (widget.isEditing) {
+      return companiesAsync.when(
+        loading: buildLoadingField,
+        error: buildCompanyError,
+        data: buildLockedCompanyDropdown,
+      );
+    }
+
+    return companiesAsync.when(
+      loading: buildLoadingField,
+      error: buildCompanyError,
+      data: buildCompanyDropdown,
+    );
+  }
+
+  Widget buildCompanyError(
+      Object error,
+      StackTrace stackTrace,
+      ) {
+    return Text(
+      'Gagal membaca perusahaan: $error',
+      style: const TextStyle(
+        color: Color(0xFFDC2626),
+      ),
+    );
+  }
+
+  Widget buildCompanyDropdown(
+      List<ActiveCompanyOption> companies,
+      ) {
+    return DropdownButtonFormField<String>(
+      value: selectedCompanyId,
+      isExpanded: true,
+      decoration: inputDecoration(
+        'Perusahaan',
+      ),
+      items: buildCompanyItems(companies),
+      onChanged: handleCompanyChanged,
+      validator: validateCompany,
+    );
+  }
+
+  Widget buildLockedCompanyDropdown(
+      List<ActiveCompanyOption> companies,
+      ) {
+    String companyName = '-';
+
+    for (final company in companies) {
+      if (company.id ==
+          selectedCompanyId) {
+        companyName =
+            company.displayName;
+        break;
+      }
+    }
+
+    return buildLockedField(
+      'Perusahaan',
+      companyName,
+    );
+  }
+
+  List<DropdownMenuItem<String>>
+  buildCompanyItems(
+      List<ActiveCompanyOption> companies,
+      ) {
+    final items =
+    <DropdownMenuItem<String>>[];
+
+    for (final company in companies) {
+      items.add(
+        DropdownMenuItem<String>(
+          value: company.id,
+          child: Text(
+            company.displayName,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      );
+    }
+
+    return items;
+  }
+
+  Widget buildFixedCompany() {
+    return buildLockedField(
+      'Perusahaan',
+      widget.fixedCompanyName ?? '-',
+    );
+  }
+
+  Widget buildLockedField(
+      String label,
+      String value,
+      ) {
+    return InputDecorator(
+      decoration:
+      inputDecoration(label),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(value),
+          ),
+          const Icon(
+            Icons.lock_outline,
+            size: 16,
+            color: Color(0xFF94A3B8),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget buildField(
+      OperationalMasterFieldConfig field,
+      AsyncValue<
+          List<AssignmentJobSiteOption>>?
+      jobSitesAsync,
+      ) {
+    if (field.type ==
+        OperationalMasterFieldType.jobSite) {
+      return buildJobSiteField(
+        field,
+        jobSitesAsync,
+      );
+    }
+
+    final controller =
+    controllers[field.key]!;
+
+    if (field.type ==
+        OperationalMasterFieldType.date) {
+      return TextFormField(
+        controller: controller,
+        readOnly: true,
+        onTap: () {
+          selectDate(field);
+        },
+        decoration: inputDecoration(
+          field.label,
+          suffixIcon: const Icon(
+            Icons.calendar_month_outlined,
+          ),
+        ),
+      );
+    }
+
+    return TextFormField(
+      controller: controller,
+      minLines: field.type ==
+          OperationalMasterFieldType
+              .multiline
+          ? 2
+          : 1,
+      maxLines: field.type ==
+          OperationalMasterFieldType
+              .multiline
+          ? 4
+          : 1,
+      decoration:
+      inputDecoration(field.label),
+      validator: field.isRequired
+          ? validateRequired
+          : null,
+    );
+  }
+
+  Widget buildJobSiteField(
+      OperationalMasterFieldConfig field,
+      AsyncValue<
+          List<AssignmentJobSiteOption>>?
+      jobSitesAsync,
+      ) {
+    if (jobSitesAsync == null) {
+      return DropdownButtonFormField<String>(
+        items: const [],
+        onChanged: null,
+        decoration: inputDecoration(
+          field.label,
+          hint:
+          'Pilih perusahaan terlebih dahulu',
+        ),
+      );
+    }
+
+    return jobSitesAsync.when(
+      loading: buildLoadingField,
+      error: buildJobSiteError,
+      data: buildJobSiteDropdown,
+    );
+  }
+
+  Widget buildJobSiteError(
+      Object error,
+      StackTrace stackTrace,
+      ) {
+    return Text(
+      'Gagal membaca Job Site: $error',
+      style: const TextStyle(
+        color: Color(0xFFDC2626),
+      ),
+    );
+  }
+
+  Widget buildJobSiteDropdown(
+      List<AssignmentJobSiteOption> jobSites,
+      ) {
+    final items =
+    <DropdownMenuItem<String>>[
+      const DropdownMenuItem<String>(
+        value: '',
+        child: Text(
+          'Tanpa Job Site khusus',
+        ),
+      ),
+    ];
+
+    for (final jobSite in jobSites) {
+      items.add(
+        DropdownMenuItem<String>(
+          value: jobSite.id,
+          child: Text(
+            jobSite.displayName,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      );
+    }
+
+    return DropdownButtonFormField<String>(
+      value: selectedJobSiteId ?? '',
+      isExpanded: true,
+      decoration:
+      inputDecoration('Job Site'),
+      items: items,
+      onChanged: handleJobSiteChanged,
+    );
+  }
+
+  Widget buildActiveSwitch() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius:
+        BorderRadius.circular(10),
+        border: Border.all(
+          color: const Color(0xFFCBD5E1),
+        ),
+      ),
+      child: SwitchListTile(
+        value: isActive,
+        onChanged:
+        isSaving ? null : handleActiveChanged,
+        dense: true,
+        title: const Text(
+          'Status Aktif',
+          style: TextStyle(
+            fontSize: 12.5,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget buildLoadingField() {
+    return const SizedBox(
+      height: 46,
+      child: Center(
+        child: LinearProgressIndicator(),
+      ),
+    );
+  }
+
+  String? validateCompany(
+      String? value,
+      ) {
+    if (value == null ||
+        value.isEmpty) {
+      return 'Perusahaan wajib dipilih';
+    }
+
+    return null;
+  }
+
+  String? validateRequired(
+      String? value,
+      ) {
+    if (value == null ||
+        value.trim().isEmpty) {
+      return 'Field ini wajib diisi';
+    }
+
+    return null;
+  }
+
+  InputDecoration inputDecoration(
+      String label, {
+        String? hint,
+        Widget? suffixIcon,
+      }) {
+    return InputDecoration(
+      labelText: label,
+      hintText: hint,
+      isDense: true,
+      filled: true,
+      fillColor: Colors.white,
+      suffixIcon: suffixIcon,
+      border: OutlineInputBorder(
+        borderRadius:
+        BorderRadius.circular(10),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius:
+        BorderRadius.circular(10),
+        borderSide: const BorderSide(
+          color: Color(0xFFCBD5E1),
+        ),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius:
+        BorderRadius.circular(10),
+        borderSide: const BorderSide(
+          color: Color(0xFF2563EB),
+          width: 1.3,
+        ),
+      ),
+    );
+  }
+}

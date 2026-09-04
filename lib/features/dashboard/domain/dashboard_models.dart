@@ -200,6 +200,10 @@ class DashboardCalculation {
         incomplete++;
       }
 
+      if (status == 'rejected') {
+        continue;
+      }
+
       final submittedAt = item.submittedAt;
 
       if (submittedAt == null) {

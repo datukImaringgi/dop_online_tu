@@ -9,7 +9,8 @@ import 'widgets/add_company_user_dialog.dart';
 import '../domain/master_unit_model.dart';
 import 'widgets/master_unit_dialog.dart';
 import 'widgets/master_unit_section.dart';
-
+import '../domain/operational_master_config.dart';
+import 'widgets/operational_master_section.dart';
 
 class MasterPage
     extends ConsumerStatefulWidget {
@@ -26,6 +27,31 @@ class MasterPage
 class _MasterPageState
     extends ConsumerState<MasterPage> {
   int selectedMenuIndex = 0;
+
+  OperationalMasterConfig?
+  getSelectedOperationalConfig() {
+    if (selectedMenuIndex == 2) {
+      return OperationalMasterConfig.jobSite;
+    }
+
+    if (selectedMenuIndex == 3) {
+      return OperationalMasterConfig.driver;
+    }
+
+    if (selectedMenuIndex == 4) {
+      return OperationalMasterConfig.route;
+    }
+
+    if (selectedMenuIndex == 5) {
+      return OperationalMasterConfig.jsa;
+    }
+
+    if (selectedMenuIndex == 6) {
+      return OperationalMasterConfig.ric;
+    }
+
+    return null;
+  }
 
   void _handleEditUser(
       BuildContext context,
@@ -179,6 +205,93 @@ class _MasterPageState
     );
   }
 
+  Widget buildSelectedMasterContent({
+    required BuildContext context,
+    required AsyncValue<
+        List<CompanyUserHierarchyModel>>
+    usersAsync,
+    required bool canRegisterUser,
+    required int? hierarchyLayer,
+    required String? companyId,
+    required String? companyName,
+  }) {
+    if (selectedMenuIndex == 0) {
+      return usersAsync.when(
+        loading: _buildLoading,
+        error: _buildError,
+        data: (
+            List<CompanyUserHierarchyModel>
+            users,
+            ) {
+          return _buildContent(
+            context: context,
+            users: users,
+            canRegisterUser:
+            canRegisterUser,
+            currentHierarchyLayer:
+            hierarchyLayer,
+            currentCompanyId: companyId,
+            currentCompanyName:
+            companyName,
+          );
+        },
+      );
+    }
+
+    if (selectedMenuIndex == 1) {
+      return MasterUnitSection(
+        onAdd: () {
+          _handleAddUnit(
+            context: context,
+            hierarchyLayer:
+            hierarchyLayer,
+            companyId: companyId,
+            companyName: companyName,
+          );
+        },
+        onEdit: (
+            MasterUnitModel unit,
+            ) {
+          _handleEditUnit(
+            context: context,
+            unit: unit,
+            hierarchyLayer:
+            hierarchyLayer,
+            companyId: companyId,
+            companyName: companyName,
+          );
+        },
+      );
+    }
+
+    final config =
+    getSelectedOperationalConfig();
+
+    if (config == null ||
+        hierarchyLayer == null ||
+        hierarchyLayer < 3) {
+      return const Center(
+        child: Text(
+          'Master Data tidak tersedia.',
+        ),
+      );
+    }
+
+    return OperationalMasterSection(
+      config: config,
+      actorHierarchyLayer:
+      hierarchyLayer,
+      fixedCompanyId:
+      hierarchyLayer == 5
+          ? null
+          : companyId,
+      fixedCompanyName:
+      hierarchyLayer == 5
+          ? null
+          : companyName,
+    );
+  }
+
   @override
   Widget build(
       BuildContext context,
@@ -216,50 +329,16 @@ class _MasterPageState
             _buildMasterMenu(),
             const SizedBox(height: 12),
             Expanded(
-              child: selectedMenuIndex == 0
-                  ? usersAsync.when(
-                loading: _buildLoading,
-                error: _buildError,
-                data: (users) {
-                  return _buildContent(
-                    context: context,
-                    users: users,
-                    canRegisterUser: canRegisterUser,
-                    currentHierarchyLayer:
-                    currentHierarchyLayer,
-                    currentCompanyId:
-                    companyAccess?.companyId,
-                    currentCompanyName:
-                    companyAccess?.companyName,
-                  );
-                },
-              )
-                  : MasterUnitSection(
-                onAdd: () {
-                  _handleAddUnit(
-                    context: context,
-                    hierarchyLayer:
-                    currentHierarchyLayer,
-                    companyId:
-                    companyAccess?.companyId,
-                    companyName:
-                    companyAccess?.companyName,
-                  );
-                },
-                onEdit: (
-                    MasterUnitModel unit,
-                    ) {
-                  _handleEditUnit(
-                    context: context,
-                    unit: unit,
-                    hierarchyLayer:
-                    currentHierarchyLayer,
-                    companyId:
-                    companyAccess?.companyId,
-                    companyName:
-                    companyAccess?.companyName,
-                  );
-                },
+              child: buildSelectedMasterContent(
+                context: context,
+                usersAsync: usersAsync,
+                canRegisterUser: canRegisterUser,
+                hierarchyLayer:
+                currentHierarchyLayer,
+                companyId:
+                companyAccess?.companyId,
+                companyName:
+                companyAccess?.companyName,
               ),
             ),
           ],
@@ -269,27 +348,70 @@ class _MasterPageState
   }
 
   Widget _buildMasterMenu() {
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: const Color(0xFFEFF3F8),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _buildMasterMenuButton(
-            index: 0,
-            label: 'User & Hierarchy',
-            icon: Icons.manage_accounts_outlined,
+    return SizedBox(
+      width: double.infinity,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: const Color(0xFFEFF3F8),
+            borderRadius:
+            BorderRadius.circular(10),
           ),
-          const SizedBox(width: 4),
-          _buildMasterMenuButton(
-            index: 1,
-            label: 'Master Unit',
-            icon: Icons.directions_bus_outlined,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildMasterMenuButton(
+                index: 0,
+                label: 'User & Hierarchy',
+                icon:
+                Icons.manage_accounts_outlined,
+              ),
+              const SizedBox(width: 4),
+              _buildMasterMenuButton(
+                index: 1,
+                label: 'Master Unit',
+                icon:
+                Icons.directions_bus_outlined,
+              ),
+              const SizedBox(width: 4),
+              _buildMasterMenuButton(
+                index: 2,
+                label: 'Job Site',
+                icon:
+                Icons.location_on_outlined,
+              ),
+              const SizedBox(width: 4),
+              _buildMasterMenuButton(
+                index: 3,
+                label: 'Driver',
+                icon:
+                Icons.person_pin_outlined,
+              ),
+              const SizedBox(width: 4),
+              _buildMasterMenuButton(
+                index: 4,
+                label: 'Rute',
+                icon: Icons.route_outlined,
+              ),
+              const SizedBox(width: 4),
+              _buildMasterMenuButton(
+                index: 5,
+                label: 'JSA',
+                icon:
+                Icons.fact_check_outlined,
+              ),
+              const SizedBox(width: 4),
+              _buildMasterMenuButton(
+                index: 6,
+                label: 'RIC',
+                icon:
+                Icons.support_agent_outlined,
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

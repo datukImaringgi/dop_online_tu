@@ -305,7 +305,7 @@ class MasterChangeRequestRepository {
   }
 
   Future<MasterChangeReviewResult>
-  reviewUnitRequest({
+  reviewOperationalRequest({
     required String requestId,
     required String decision,
     String? reviewNote,
@@ -395,14 +395,6 @@ class MasterChangeRequestRepository {
     required String decision,
     String? reviewNote,
   }) async {
-    if (masterType == 'unit') {
-      return reviewUnitRequest(
-        requestId: requestId,
-        decision: decision,
-        reviewNote: reviewNote,
-      );
-    }
-
     if (masterType == 'user_assignment') {
       return reviewUserRequest(
         requestId: requestId,
@@ -411,8 +403,28 @@ class MasterChangeRequestRepository {
       );
     }
 
+    const operationalMasterTypes = <String>{
+      'unit',
+      'driver',
+      'route',
+      'job_site',
+      'jsa_procedure',
+      'control_room',
+    };
+
+    if (operationalMasterTypes.contains(
+      masterType,
+    )) {
+      return reviewOperationalRequest(
+        requestId: requestId,
+        decision: decision,
+        reviewNote: reviewNote,
+      );
+    }
+
     throw Exception(
-      'Jenis Master Data belum didukung.',
+      'Jenis Master Data $masterType '
+          'belum didukung.',
     );
   }
 
