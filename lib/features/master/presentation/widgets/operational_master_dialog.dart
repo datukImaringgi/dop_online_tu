@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart';
 
 import '../../data/active_companies_provider.dart';
 import '../../data/assignment_job_sites_provider.dart';
@@ -44,8 +45,13 @@ class _OperationalMasterDialogState
         OperationalMasterDialog> {
   final formKey = GlobalKey<FormState>();
 
-  final controllers =
-  <String, TextEditingController>{};
+  final controllers = <String, TextEditingController>{};
+
+  final vendorController = TextEditingController();
+
+  final vendorFocusNode = FocusNode();
+
+  List<String> visibleVendorOptions = <String>[];
 
   String? selectedCompanyId;
   String? selectedJobSiteId;
@@ -78,12 +84,19 @@ class _OperationalMasterDialogState
         ? recordJobSiteId
         : null;
 
-    final recordIsActive =
-    widget.record?['is_active'];
+    final recordIsActive = widget.record?['is_active'];
 
     isActive = recordIsActive is bool
         ? recordIsActive
         : true;
+
+    final recordVendorCompany =
+    widget.record?['vendor_company'];
+
+    if (recordVendorCompany is String) {
+      vendorController.text =
+          recordVendorCompany.trim();
+    }
 
     for (final field
     in widget.config.fields) {
@@ -104,10 +117,11 @@ class _OperationalMasterDialogState
 
   @override
   void dispose() {
-    for (final controller
-    in controllers.values) {
+    for (final controller in controllers.values) {
       controller.dispose();
     }
+    vendorController.dispose();
+    vendorFocusNode.dispose();
 
     super.dispose();
   }
@@ -194,8 +208,7 @@ class _OperationalMasterDialogState
     });
   }
 
-  Map<String, dynamic>
-  buildRequestedData() {
+  Map<String, dynamic> buildRequestedData() {
     final result = <String, dynamic>{
       'company_id': selectedCompanyId,
       'is_active': isActive,
@@ -222,7 +235,76 @@ class _OperationalMasterDialogState
       value.isEmpty ? null : value;
     }
 
+    if (widget.config.masterType ==
+        'route') {
+      final origin =
+          result['origin']
+              ?.toString()
+              .trim() ??
+              '';
+
+      final destination =
+          result['destination']
+              ?.toString()
+              .trim() ??
+              '';
+
+      result['origin'] = origin;
+      result['destination'] =
+          destination;
+      result['route_name'] =
+      '$origin - $destination';
+    }
+
+    if (widget.config.masterType ==
+        'driver') {
+      final vendorName =
+      vendorController.text.trim();
+
+      result['vendor_company'] =
+      vendorName.isEmpty
+          ? null
+          : vendorName;
+
+      result['employee_number'] = null;
+    }
+
     return result;
+  }
+
+  String? validateRouteData() {
+    if (widget.config.masterType !=
+        'route') {
+      return null;
+    }
+
+    final originController =
+    controllers['origin'];
+
+    final destinationController =
+    controllers['destination'];
+
+    final origin =
+        originController?.text.trim() ??
+            '';
+
+    final destination =
+        destinationController
+            ?.text
+            .trim() ??
+            '';
+
+    if (origin.isEmpty ||
+        destination.isEmpty) {
+      return 'Asal dan Tujuan wajib diisi.';
+    }
+
+    if (origin.toLowerCase() ==
+        destination.toLowerCase()) {
+      return 'Asal dan Tujuan tidak boleh sama.';
+    }
+
+    return null;
   }
 
   Future<void> save() async {
@@ -235,6 +317,17 @@ class _OperationalMasterDialogState
             false;
 
     if (!isValid) {
+      return;
+    }
+
+    final routeValidationMessage =
+    validateRouteData();
+
+    if (routeValidationMessage != null) {
+      showMessage(
+        routeValidationMessage,
+        true,
+      );
       return;
     }
 
@@ -278,6 +371,17 @@ class _OperationalMasterDialogState
           widget.config.tableName,
         ),
       );
+
+      if (widget.config.masterType ==
+          'driver') {
+        ref.invalidate(
+          driverVendorOptionsProvider(
+            DriverVendorQuery(
+              companyId: companyId,
+            ),
+          ),
+        );
+      }
 
       ref.invalidate(
         masterChangeRequestsProvider,
@@ -429,6 +533,13 @@ class _OperationalMasterDialogState
                   ),
                   const SizedBox(height: 12),
                 ],
+
+                if (widget.config.masterType ==
+                    'driver') ...[
+                  buildVendorField(),
+                  const SizedBox(height: 12),
+                ],
+
                 buildActiveSwitch(),
               ],
             ),
@@ -719,6 +830,198 @@ class _OperationalMasterDialogState
       inputDecoration('Job Site'),
       items: items,
       onChanged: handleJobSiteChanged,
+    );
+  }
+
+  Widget buildVendorField() {
+    final vendorsAsync = ref.watch(
+      driverVendorOptionsProvider(
+        DriverVendorQuery(
+          companyId: selectedCompanyId,
+        ),
+      ),
+    );
+
+    return vendorsAsync.when(
+      loading: buildLoadingField,
+      error: buildVendorError,
+      data: buildVendorAutocomplete,
+    );
+  }
+
+  Widget buildVendorError(
+      Object error,
+      StackTrace stackTrace,
+      ) {
+    return TextFormField(
+      controller: vendorController,
+      decoration: inputDecoration(
+        'Perusahaan Driver',
+        hint:
+        'Ketik nama perusahaan vendor',
+      ),
+    );
+  }
+
+  Widget buildVendorAutocomplete(
+      List<String> vendorOptions,
+      ) {
+    return RawAutocomplete<String>(
+      textEditingController:
+      vendorController,
+      focusNode: vendorFocusNode,
+      displayStringForOption:
+      displayVendorOption,
+      optionsBuilder: (
+          TextEditingValue inputValue,
+          ) {
+        return filterVendorOptions(
+          inputValue,
+          vendorOptions,
+        );
+      },
+      onSelected: handleVendorSelected,
+      fieldViewBuilder: buildVendorTextField,
+      optionsViewBuilder:
+      buildVendorOptionsView,
+    );
+  }
+
+  String displayVendorOption(
+      String vendor,
+      ) {
+    return vendor;
+  }
+
+  Iterable<String> filterVendorOptions(
+      TextEditingValue inputValue,
+      List<String> vendorOptions,
+      ) {
+    final query =
+    inputValue.text.trim().toLowerCase();
+
+    if (query.isEmpty) {
+      visibleVendorOptions =
+          vendorOptions.take(20).toList();
+
+      return visibleVendorOptions;
+    }
+
+    final filtered = <String>[];
+
+    for (final vendor in vendorOptions) {
+      if (vendor
+          .toLowerCase()
+          .contains(query)) {
+        filtered.add(vendor);
+      }
+
+      if (filtered.length >= 20) {
+        break;
+      }
+    }
+
+    visibleVendorOptions = filtered;
+
+    return filtered;
+  }
+
+  void handleVendorSelected(
+      String vendor,
+      ) {
+    vendorController.value =
+        TextEditingValue(
+          text: vendor,
+          selection:
+          TextSelection.collapsed(
+            offset: vendor.length,
+          ),
+        );
+  }
+
+  Widget buildVendorTextField(
+      BuildContext context,
+      TextEditingController controller,
+      FocusNode focusNode,
+      VoidCallback onFieldSubmitted,
+      ) {
+    return TextFormField(
+      controller: controller,
+      focusNode: focusNode,
+      textCapitalization:
+      TextCapitalization.words,
+      decoration: inputDecoration(
+        'Perusahaan Driver',
+        hint:
+        'Pilih vendor atau ketik vendor baru',
+        suffixIcon: const Icon(
+          Icons.business_outlined,
+          size: 18,
+        ),
+      ),
+    );
+  }
+
+  Widget buildVendorOptionsView(
+      BuildContext context,
+      AutocompleteOnSelected<String>
+      onSelected,
+      Iterable<String> options,
+      ) {
+    final optionList = options.toList();
+
+    if (optionList.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Align(
+      alignment: Alignment.topLeft,
+      child: Material(
+        elevation: 8,
+        borderRadius:
+        BorderRadius.circular(8),
+        clipBehavior: Clip.antiAlias,
+        child: ConstrainedBox(
+          constraints:
+          const BoxConstraints(
+            minWidth: 300,
+            maxWidth: 500,
+            maxHeight: 220,
+          ),
+          child: ListView.builder(
+            padding:
+            const EdgeInsets.symmetric(
+              vertical: 4,
+            ),
+            shrinkWrap: true,
+            itemCount: optionList.length,
+            itemBuilder: (
+                BuildContext context,
+                int index,
+                ) {
+              final vendor =
+              optionList[index];
+
+              return ListTile(
+                dense: true,
+                leading: const Icon(
+                  Icons.business_outlined,
+                  size: 17,
+                ),
+                title: Text(
+                  vendor,
+                  style: const TextStyle(
+                    fontSize: 12,
+                  ),
+                ),
+                onTap: () {
+                  onSelected(vendor);
+                },
+              );
+            },
+          ),
+        ),
+      ),
     );
   }
 

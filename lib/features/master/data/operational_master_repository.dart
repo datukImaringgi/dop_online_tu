@@ -172,8 +172,77 @@ class OperationalMasterRepository {
     return records;
   }
 
-  Future<OperationalMasterResult>
-  submitChange({
+  Future<List<String>> loadDriverVendors({
+    required String? companyId,
+  }) async {
+    var query = supabase
+        .from('drivers')
+        .select('vendor_company')
+        .not(
+      'vendor_company',
+      'is',
+      null,
+    );
+
+    if (companyId != null &&
+        companyId.trim().isNotEmpty) {
+      query = query.eq(
+        'company_id',
+        companyId.trim(),
+      );
+    }
+
+    final response = await query.order(
+      'vendor_company',
+      ascending: true,
+    );
+
+    final vendorNames = <String>{};
+
+    for (final rawRecord in response) {
+      final record =
+      Map<String, dynamic>.from(
+        rawRecord,
+      );
+
+      final rawVendor =
+      record['vendor_company'];
+
+      if (rawVendor is! String) {
+        continue;
+      }
+
+      final vendorName =
+      rawVendor.trim();
+
+      if (vendorName.isEmpty) {
+        continue;
+      }
+
+      vendorNames.add(vendorName);
+    }
+
+    final result = vendorNames.toList();
+
+    result.sort(
+      compareVendorNames,
+    );
+
+    return result;
+  }
+
+  int compareVendorNames(
+      String first,
+      String second,
+      ) {
+    return first
+        .toLowerCase()
+        .compareTo(
+      second.toLowerCase(),
+    );
+  }
+
+  Future<OperationalMasterResult> submitChange({
     required String masterType,
     required String actionType,
     required String companyId,
@@ -324,6 +393,50 @@ FutureProvider.family<
     String>(
   loadOperationalMasterData,
 );
+
+class DriverVendorQuery {
+  final String? companyId;
+
+  const DriverVendorQuery({
+    required this.companyId,
+  });
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) {
+      return true;
+    }
+
+    return other is DriverVendorQuery &&
+        other.companyId == companyId;
+  }
+
+  @override
+  int get hashCode {
+    return companyId.hashCode;
+  }
+}
+
+final driverVendorOptionsProvider =
+FutureProvider.family<
+    List<String>,
+    DriverVendorQuery>(
+  loadDriverVendorOptions,
+);
+
+Future<List<String>>
+loadDriverVendorOptions(
+    Ref ref,
+    DriverVendorQuery query,
+    ) async {
+  final repository = ref.watch(
+    operationalMasterRepositoryProvider,
+  );
+
+  return repository.loadDriverVendors(
+    companyId: query.companyId,
+  );
+}
 
 Future<List<Map<String, dynamic>>>
 loadOperationalMasterData(

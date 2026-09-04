@@ -54,8 +54,7 @@ class OperationalMasterConfig {
     return value;
   }
 
-  static const driver =
-  OperationalMasterConfig(
+  static const driver = OperationalMasterConfig(
     masterType: 'driver',
     tableName: 'drivers',
     title: 'Master Driver',
@@ -94,18 +93,6 @@ class OperationalMasterConfig {
         type:
         OperationalMasterFieldType.date,
       ),
-      OperationalMasterFieldConfig(
-        key: 'employee_number',
-        label: 'Nomor Karyawan',
-        type:
-        OperationalMasterFieldType.text,
-      ),
-      OperationalMasterFieldConfig(
-        key: 'vendor_company',
-        label: 'Perusahaan Vendor',
-        type:
-        OperationalMasterFieldType.text,
-      ),
     ],
   );
 
@@ -125,23 +112,18 @@ class OperationalMasterConfig {
         OperationalMasterFieldType.jobSite,
       ),
       OperationalMasterFieldConfig(
-        key: 'route_name',
-        label: 'Nama Rute',
-        type:
-        OperationalMasterFieldType.text,
-        isRequired: true,
-      ),
-      OperationalMasterFieldConfig(
         key: 'origin',
         label: 'Asal',
         type:
         OperationalMasterFieldType.text,
+        isRequired: true,
       ),
       OperationalMasterFieldConfig(
         key: 'destination',
         label: 'Tujuan',
         type:
         OperationalMasterFieldType.text,
+        isRequired: true,
       ),
     ],
   );
@@ -210,8 +192,7 @@ class OperationalMasterConfig {
     ],
   );
 
-  static const ric =
-  OperationalMasterConfig(
+  static const ric = OperationalMasterConfig(
     masterType: 'control_room',
     tableName: 'control_rooms',
     title: 'Master RIC',
@@ -227,8 +208,7 @@ class OperationalMasterConfig {
       ),
       OperationalMasterFieldConfig(
         key: 'control_room_name',
-        label:
-        'Risk Intervention Centre (RIC)',
+        label: 'RIC Person Name',
         type:
         OperationalMasterFieldType.text,
         isRequired: true,
