@@ -232,44 +232,47 @@ class AppShell extends ConsumerWidget {
             color: const Color(0xFF062B4F),
             child: Column(
               children: [
-                const SizedBox(height: 18),
+                const SizedBox(height: 16),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Row(
-                    children: [
-                      Container(
-                        height: 36,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 11,
-                        ),
-                        alignment: Alignment.center,
-                        color: const Color(0xFFFFC928),
-                        child: const Text(
-                          'Trakindo',
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                  ),
+                  child: Container(
+                    height: 50,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(7),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          flex: 11,
+                          child: Image.asset(
+                            'assets/images/berau_coal_logo.png',
+                            fit: BoxFit.contain,
                           ),
                         ),
-                      ),
-                      Container(
-                        height: 36,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
+                        Container(
+                          width: 1,
+                          height: 26,
+                          margin: const EdgeInsets.symmetric(
+                            horizontal: 7,
+                          ),
+                          color: const Color(0xFFCBD5E1),
                         ),
-                        alignment: Alignment.center,
-                        color: Colors.black,
-                        child: const Text(
-                          'CAT',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 11,
+                        Expanded(
+                          flex: 10,
+                          child: Image.asset(
+                            'assets/images/trakindo_cat_logo.png',
+                            fit: BoxFit.contain,
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
                 const SizedBox(height: 10),

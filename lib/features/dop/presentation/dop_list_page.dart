@@ -5,6 +5,7 @@ import 'package:data_table_2/data_table_2.dart';
 
 import '../data/dop_list_provider.dart';
 import '../domain/dop_list_item_model.dart';
+import 'widgets/dop_list_filter_bar.dart';
 
 class DopListPage extends ConsumerStatefulWidget {
   const DopListPage({super.key});
@@ -20,6 +21,9 @@ class _DopListPageState extends ConsumerState<DopListPage> {
   String selectedSite = 'Semua';
   String selectedUnitType = 'Semua';
   String selectedStatus = 'Semua';
+  String selectedUnitNumber = 'Semua';
+  String selectedAreaType = 'Semua';
+  String selectedShift = 'Semua';
   String dopNumberSearchQuery = '';
   final dopNumberSearchController = TextEditingController();
 
@@ -98,11 +102,41 @@ class _DopListPageState extends ConsumerState<DopListPage> {
               items.map((item) => item.unitType).toList(),
             );
 
+            final unitNumberOptions = _buildOptions(
+              items.map((item) {
+                return item.unitNumber;
+              }).toList(),
+            );
+
+            final areaTypeOptions = _buildOptions(
+              items.map((item) {
+                return item.areaType;
+              }).toList(),
+            );
+
+            final shiftOptions = _buildOptions(
+              items.map((item) {
+                return item.shift;
+              }).toList(),
+            );
+
             final statusOptions = _buildOptions(
               items.map((item) => item.status).toList(),
             );
 
             final filteredItems = items.where((item) {
+              final matchUnitNumber =
+                  selectedUnitNumber == 'Semua' ||
+                      item.unitNumber == selectedUnitNumber;
+
+              final matchAreaType =
+                  selectedAreaType == 'Semua' ||
+                      item.areaType == selectedAreaType;
+
+              final matchShift =
+                  selectedShift == 'Semua' ||
+                      item.shift == selectedShift;
+
               final matchCompany = selectedCompany == 'Semua' ||
                   item.companyName == selectedCompany;
 
@@ -128,6 +162,9 @@ class _DopListPageState extends ConsumerState<DopListPage> {
               return matchCompany &&
                   matchSite &&
                   matchUnitType &&
+                  matchUnitNumber &&
+                  matchAreaType &&
+                  matchShift &&
                   matchStatus &&
                   matchDopNumber;
             }).toList();
@@ -145,17 +182,19 @@ class _DopListPageState extends ConsumerState<DopListPage> {
                           Text(
                             'DOP List',
                             style: TextStyle(
-                              fontSize: 26,
-                              fontWeight: FontWeight.bold,
+                              fontSize: 24,
+                              height: 1.1,
+                              fontWeight: FontWeight.w700,
                               color: Color(0xFF0F172A),
                             ),
                           ),
-                          SizedBox(height: 6),
+                          SizedBox(height: 4),
                           Text(
                             'Daftar Daily Operation Plan Transportasi',
                             style: TextStyle(
                               color: Color(0xFF64748B),
-                              fontSize: 13,
+                              fontSize: 12,
+                              height: 1.2,
                             ),
                           ),
                         ],
@@ -191,71 +230,86 @@ class _DopListPageState extends ConsumerState<DopListPage> {
 
                 Align(
                   alignment: Alignment.centerLeft,
-                  child: SizedBox(
-                    width: 420,
-                    child: TextField(
-                      controller: dopNumberSearchController,
-                      onChanged: handleDopNumberSearchChanged,
-                      decoration: InputDecoration(
-                        labelText: 'Cari No. DOP',
-                        hintText: 'Contoh: 20260824-001',
-                        labelStyle: const TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF475569),
-                        ),
-                        hintStyle: const TextStyle(
-                          fontSize: 13,
-                          color: Color(0xFF94A3B8),
-                        ),
-                        prefixIcon: const Icon(
-                          Icons.search,
-                          size: 18,
-                        ),
-                        prefixIconConstraints: const BoxConstraints(
-                          minWidth: 38,
-                          minHeight: 38,
-                        ),
-                        suffixIcon: dopNumberSearchQuery.isEmpty
-                            ? null
-                            : IconButton(
-                          onPressed: clearDopNumberSearch,
-                          tooltip: 'Hapus pencarian',
-                          visualDensity: VisualDensity.compact,
-                          icon: const Icon(
-                            Icons.close,
-                            size: 18,
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 6),
+                    child: SizedBox(
+                      width: 250,
+                      child: TextField(
+                        controller: dopNumberSearchController,
+                        onChanged: handleDopNumberSearchChanged,
+                        decoration: InputDecoration(
+                          labelText: 'Cari No. DOP',
+                          hintText: 'Contoh: 20260824-001',
+                          labelStyle: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF475569),
+                          ),
+                          hintStyle: const TextStyle(
+                            fontSize: 13,
+                            color: Color(0xFF94A3B8),
+                          ),
+                          prefixIcon: const Icon(
+                            Icons.search,
+                            size: 16,
+                          ),
+                          prefixIconConstraints: const BoxConstraints(
+                            minWidth: 34,
+                            minHeight: 34,
+                          ),
+                          suffixIcon: dopNumberSearchQuery.isEmpty
+                              ? null
+                              : IconButton(
+                            onPressed: clearDopNumberSearch,
+                            tooltip: 'Hapus pencarian',
+                            visualDensity: VisualDensity.compact,
+                            icon: const Icon(
+                              Icons.close,
+                              size: 18,
+                            ),
+                          ),
+                          isDense: true,
+                          filled: true,
+                          fillColor: Colors.white,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 7,
+                          ),
+                          constraints: const BoxConstraints(
+                            minHeight: 44,
+                            maxHeight: 44,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(7),
                           ),
                         ),
-                        isDense: true,
-                        filled: true,
-                        fillColor: Colors.white,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 10,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF0F172A),
                         ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: Color(0xFF0F172A),
                       ),
                     ),
                   ),
                 ),
 
-                const SizedBox(height: 10),
+                const SizedBox(height: 2),
 
-                _FilterBar(
+                DopListFilterBar(
                   companyOptions: companyOptions,
                   siteOptions: siteOptions,
                   unitTypeOptions: unitTypeOptions,
+                  unitNumberOptions: unitNumberOptions,
+                  areaTypeOptions: areaTypeOptions,
+                  shiftOptions: shiftOptions,
                   statusOptions: statusOptions,
+
                   selectedCompany: selectedCompany,
                   selectedSite: selectedSite,
                   selectedUnitType: selectedUnitType,
+                  selectedUnitNumber: selectedUnitNumber,
+                  selectedAreaType: selectedAreaType,
+                  selectedShift: selectedShift,
                   selectedStatus: selectedStatus,
+
                   onCompanyChanged: (value) {
                     setState(() {
                       selectedCompany = value;
@@ -269,6 +323,21 @@ class _DopListPageState extends ConsumerState<DopListPage> {
                   onUnitTypeChanged: (value) {
                     setState(() {
                       selectedUnitType = value;
+                    });
+                  },
+                  onUnitNumberChanged: (value) {
+                    setState(() {
+                      selectedUnitNumber = value;
+                    });
+                  },
+                  onAreaTypeChanged: (value) {
+                    setState(() {
+                      selectedAreaType = value;
+                    });
+                  },
+                  onShiftChanged: (value) {
+                    setState(() {
+                      selectedShift = value;
                     });
                   },
                   onStatusChanged: (value) {
@@ -319,225 +388,6 @@ class _DopListPageState extends ConsumerState<DopListPage> {
   }
 }
 
-class _FilterBar extends StatelessWidget {
-  final List<String> companyOptions;
-  final List<String> siteOptions;
-  final List<String> unitTypeOptions;
-  final List<String> statusOptions;
-
-  final String selectedCompany;
-  final String selectedSite;
-  final String selectedUnitType;
-  final String selectedStatus;
-
-  final ValueChanged<String> onCompanyChanged;
-  final ValueChanged<String> onSiteChanged;
-  final ValueChanged<String> onUnitTypeChanged;
-  final ValueChanged<String> onStatusChanged;
-
-  const _FilterBar({
-    required this.companyOptions,
-    required this.siteOptions,
-    required this.unitTypeOptions,
-    required this.statusOptions,
-    required this.selectedCompany,
-    required this.selectedSite,
-    required this.selectedUnitType,
-    required this.selectedStatus,
-    required this.onCompanyChanged,
-    required this.onSiteChanged,
-    required this.onUnitTypeChanged,
-    required this.onStatusChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      color: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(
-          color: Color(0xFFE2E8F0),
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 10,
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: _FilterDropdown(
-                label: 'Perusahaan',
-                value: selectedCompany,
-                items: companyOptions,
-                onChanged: onCompanyChanged,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _FilterDropdown(
-                label: 'Site',
-                value: selectedSite,
-                items: siteOptions,
-                onChanged: onSiteChanged,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _FilterDropdown(
-                label: 'Type Unit',
-                value: selectedUnitType,
-                items: unitTypeOptions,
-                onChanged: onUnitTypeChanged,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _FilterDropdown(
-                label: 'Status Approval',
-                value: selectedStatus,
-                items: statusOptions,
-                onChanged: onStatusChanged,
-                formatLabel: _formatStatus,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  static String _formatStatus(String status) {
-    if (status == 'pending_layer_3') {
-      return 'Approval Layer 3';
-    }
-
-    if (status == 'pending_layer_4') {
-      return 'Approval Layer 4';
-    }
-
-    if (status == 'revision_required') {
-      return 'Perlu Revisi';
-    }
-
-    if (status == 'approved') {
-      return 'Approved';
-    }
-
-    if (status == 'rejected') {
-      return 'Rejected';
-    }
-
-    if (status == 'submitted') {
-      return 'Submitted';
-    }
-
-    if (status == 'cancelled') {
-      return 'Cancelled';
-    }
-
-    if (status == 'draft') {
-      return 'Draft';
-    }
-
-    return status;
-  }
-}
-
-class _FilterDropdown extends StatelessWidget {
-  final String label;
-  final String value;
-  final List<String> items;
-  final ValueChanged<String> onChanged;
-  final String Function(String value)? formatLabel;
-
-  const _FilterDropdown({
-    required this.label,
-    required this.value,
-    required this.items,
-    required this.onChanged,
-    this.formatLabel,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return DropdownButtonFormField<String>(
-      value: value,
-      isExpanded: true,
-      icon: const Icon(
-        Icons.keyboard_arrow_down,
-        size: 19,
-      ),
-      iconSize: 19,
-      style: const TextStyle(
-        color: Color(0xFF0F172A),
-        fontSize: 13,
-        fontWeight: FontWeight.w500,
-      ),
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: const TextStyle(
-          fontSize: 12,
-          color: Color(0xFF475569),
-        ),
-        isDense: true,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 11,
-          vertical: 10,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(
-            color: Color(0xFF94A3B8),
-          ),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(
-            color: Color(0xFF0D6EFD),
-            width: 1.4,
-          ),
-        ),
-      ),
-      items: _buildDropdownItems(),
-      onChanged: _handleChanged,
-    );
-  }
-
-  List<DropdownMenuItem<String>> _buildDropdownItems() {
-    final dropdownItems = <DropdownMenuItem<String>>[];
-
-    for (final item in items) {
-      dropdownItems.add(
-        DropdownMenuItem<String>(
-          value: item,
-          child: Text(
-            formatLabel == null ? item : formatLabel!(item),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      );
-    }
-
-    return dropdownItems;
-  }
-
-  void _handleChanged(String? selectedValue) {
-    if (selectedValue == null) {
-      return;
-    }
-
-    onChanged(selectedValue);
-  }
-}
-
 class _DopDataTable extends StatefulWidget {
   final List<DopListItemModel> items;
 
@@ -560,6 +410,18 @@ class _DopDataTableState extends State<_DopDataTable> {
     horizontalScrollController.dispose();
     verticalScrollController.dispose();
     super.dispose();
+  }
+
+  Widget _singleLineText(String value) {
+    return Tooltip(
+      message: value,
+      child: Text(
+        value,
+        maxLines: 1,
+        softWrap: false,
+        overflow: TextOverflow.ellipsis,
+      ),
+    );
   }
 
   @override
@@ -602,32 +464,32 @@ class _DopDataTableState extends State<_DopDataTable> {
 
       columns: const [
         DataColumn2(
+          label: Text('Status'),
+          fixedWidth: 100,
+        ),
+        DataColumn2(
           label: Text('No. DOP'),
-          fixedWidth: 235,
+          fixedWidth: 120,
         ),
         DataColumn2(
           label: Text('Hari'),
-          fixedWidth: 70,
+          fixedWidth: 60,
         ),
         DataColumn2(
           label: Text('Tanggal'),
-          fixedWidth: 95,
+          fixedWidth: 80,
         ),
         DataColumn2(
           label: Text('Perusahaan'),
-          fixedWidth: 145,
+          fixedWidth: 130,
         ),
         DataColumn2(
           label: Text('Job Site'),
-          fixedWidth: 145,
+          fixedWidth: 100,
         ),
         DataColumn2(
           label: Text('Rencana Pekerjaan'),
-          fixedWidth: 260,
-        ),
-        DataColumn2(
-          label: Text('Jenis Unit'),
-          fixedWidth: 85,
+          fixedWidth: 200,
         ),
         DataColumn2(
           label: Text('No Lambung'),
@@ -635,31 +497,31 @@ class _DopDataTableState extends State<_DopDataTable> {
         ),
         DataColumn2(
           label: Text('Mulai'),
-          fixedWidth: 70,
+          fixedWidth: 50,
         ),
         DataColumn2(
           label: Text('Akhir'),
-          fixedWidth: 70,
+          fixedWidth: 50,
         ),
         DataColumn2(
           label: Text('Nama'),
-          fixedWidth: 150,
+          fixedWidth: 100,
         ),
         DataColumn2(
           label: Text('SID'),
-          fixedWidth: 85,
+          fixedWidth: 60,
         ),
         DataColumn2(
           label: Text('Expired SID'),
-          fixedWidth: 105,
+          fixedWidth: 100,
         ),
         DataColumn2(
           label: Text('Expired SIMPER'),
-          fixedWidth: 120,
+          fixedWidth: 100,
         ),
         DataColumn2(
           label: Text('Rute'),
-          fixedWidth: 170,
+          fixedWidth: 100,
         ),
         DataColumn2(
           label: Text('Observer'),
@@ -710,10 +572,6 @@ class _DopDataTableState extends State<_DopDataTable> {
           fixedWidth: 175,
         ),
         DataColumn2(
-          label: Text('Status'),
-          fixedWidth: 115,
-        ),
-        DataColumn2(
           label: Text('Dibuat Oleh'),
           fixedWidth: 145,
         ),
@@ -738,37 +596,57 @@ class _DopDataTableState extends State<_DopDataTable> {
       rows.add(
         DataRow(
           cells: [
-            DataCell(SelectableText(item.dopNumber)),
-            DataCell(Text(item.dayName)),
-            DataCell(Text(item.dopDate)),
-            DataCell(Text(item.companyName)),
-            DataCell(Text(item.jobSite)),
-            DataCell(Text(item.workPlan)),
-            DataCell(Text(item.unitType)),
-            DataCell(Text(item.unitNumber)),
-            DataCell(Text(_formatTime(item.startTime))),
-            DataCell(Text(_formatTime(item.endTime))),
-            DataCell(Text(item.driverName)),
-            DataCell(Text(item.sid)),
-            DataCell(Text(item.sidExpiredDate)),
-            DataCell(Text(item.simperExpiredDate)),
-            DataCell(Text(item.route)),
-            DataCell(Text(item.observer)),
-            DataCell(Text(item.isCritical ? 'Kritis' : 'Tidak')),
-            DataCell(Text(item.riskLevel)),
-            DataCell(Text(item.jsaProcedure)),
-            DataCell(Text(item.shift)),
-            DataCell(Text(item.layer1)),
-            DataCell(Text(item.layer2)),
-            DataCell(Text(item.layer3)),
-            DataCell(Text(item.layer4)),
-            DataCell(Text(item.controlRoom)),
-            DataCell(Text(_formatArea(item.areaType))),
-            DataCell(Text(item.transportCompany)),
-            DataCell(_StatusBadge(status: item.status)),
-            DataCell(Text(item.createdByName)),
-            DataCell(Text(item.approvedByName)),
-            DataCell(Text(item.knownByName)),
+            DataCell(
+              _StatusBadge(status: item.status),
+            ),
+            DataCell(_singleLineText(item.dopNumber)),
+            DataCell(_singleLineText(item.dayName)),
+            DataCell(_singleLineText(item.dopDate)),
+            DataCell(_singleLineText(item.companyName)),
+            DataCell(_singleLineText(item.jobSite)),
+            DataCell(_singleLineText(item.workPlan)),
+            DataCell(_singleLineText(item.unitNumber)),
+            DataCell(_singleLineText(
+              _formatTime(item.startTime),
+            )),
+            DataCell(_singleLineText(
+              _formatTime(item.endTime),
+            )),
+            DataCell(_singleLineText(item.driverName)),
+            DataCell(_singleLineText(item.sid)),
+            DataCell(_singleLineText(item.sidExpiredDate)),
+            DataCell(_singleLineText(
+              item.simperExpiredDate,
+            )),
+            DataCell(_singleLineText(item.route)),
+            DataCell(_singleLineText(item.observer)),
+            DataCell(_singleLineText(
+              item.isCritical ? 'Kritis' : 'Tidak',
+            )),
+            DataCell(_singleLineText(item.riskLevel)),
+
+            // Khusus Prosedur/JSA boleh wrap.
+            DataCell(
+              Text(item.jsaProcedure),
+            ),
+
+            DataCell(_singleLineText(item.shift)),
+            DataCell(_singleLineText(item.layer1)),
+            DataCell(_singleLineText(item.layer2)),
+            DataCell(_singleLineText(item.layer3)),
+            DataCell(_singleLineText(item.layer4)),
+            DataCell(_singleLineText(item.controlRoom)),
+            DataCell(_singleLineText(
+              _formatArea(item.areaType),
+            )),
+            DataCell(_singleLineText(
+              item.transportCompany,
+            )),
+            DataCell(_singleLineText(item.createdByName)),
+            DataCell(_singleLineText(
+              item.approvedByName,
+            )),
+            DataCell(_singleLineText(item.knownByName)),
           ],
         ),
       );
