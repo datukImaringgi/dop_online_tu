@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart';
 
 import '../../data/active_companies_provider.dart';
 import '../../data/assignment_job_sites_provider.dart';
@@ -39,7 +40,10 @@ class _MasterUnitDialogState
     extends ConsumerState<MasterUnitDialog> {
   final formKey = GlobalKey<FormState>();
 
-  final unitNumberController =
+  final unitCodeController =
+  TextEditingController();
+
+  final unitSequenceController =
   TextEditingController();
 
   final ownerCompanyController =
@@ -62,8 +66,9 @@ class _MasterUnitDialogState
       selectedCompanyId = unit.companyId;
       selectedJobSiteId = unit.jobSiteId;
       selectedUnitType = unit.unitType;
-      unitNumberController.text =
-          unit.unitNumber;
+      applyExistingUnitNumber(
+        unit.unitNumber,
+      );
       ownerCompanyController.text =
           unit.ownerCompany;
       isActive = unit.isActive;
@@ -74,9 +79,59 @@ class _MasterUnitDialogState
         widget.fixedCompanyId;
   }
 
+  void applyExistingUnitNumber(
+      String unitNumber,
+      ) {
+    final normalized = unitNumber
+        .trim()
+        .toUpperCase()
+        .replaceAll('-', ' ')
+        .replaceAll(
+      RegExp(r'\s+'),
+      ' ',
+    );
+
+    final match = RegExp(
+      r'^([A-Z0-9]+)\s*(\d+)$',
+    ).firstMatch(normalized);
+
+    if (match == null) {
+      unitCodeController.clear();
+      unitSequenceController.text =
+          normalized;
+      return;
+    }
+
+    unitCodeController.text =
+        match.group(1) ?? '';
+
+    unitSequenceController.text =
+        match.group(2) ?? '';
+  }
+
+  String get normalizedUnitNumber {
+    final unitCode = unitCodeController
+        .text
+        .replaceAll(
+      RegExp(r'\s+'),
+      '',
+    )
+        .toUpperCase();
+
+    final unitSequence = unitSequenceController
+        .text
+        .replaceAll(
+      RegExp(r'\s+'),
+      '',
+    );
+
+    return '$unitCode $unitSequence';
+  }
+
   @override
   void dispose() {
-    unitNumberController.dispose();
+    unitCodeController.dispose();
+    unitSequenceController.dispose();
     ownerCompanyController.dispose();
     super.dispose();
   }
@@ -158,8 +213,7 @@ class _MasterUnitDialogState
         result = await repository.updateUnit(
           unitId: widget.unit!.id,
           jobSiteId: selectedJobSiteId!,
-          unitNumber:
-          unitNumberController.text,
+          unitNumber: normalizedUnitNumber,
           unitType: selectedUnitType,
           ownerCompany:
           ownerCompanyController.text,
@@ -169,8 +223,7 @@ class _MasterUnitDialogState
         result = await repository.createUnit(
           companyId: selectedCompanyId!,
           jobSiteId: selectedJobSiteId!,
-          unitNumber:
-          unitNumberController.text,
+          unitNumber: normalizedUnitNumber,
           unitType: selectedUnitType,
           ownerCompany:
           ownerCompanyController.text,
@@ -231,6 +284,38 @@ class _MasterUnitDialogState
     if (value == null ||
         value.trim().isEmpty) {
       return 'Field ini wajib diisi';
+    }
+
+    return null;
+  }
+
+  String? validateUnitCode(String? value) {
+    final unitCode = value?.trim() ?? '';
+
+    if (unitCode.isEmpty) {
+      return 'Kode Unit wajib diisi';
+    }
+
+    if (!RegExp(r'^[a-zA-Z]+$').hasMatch(unitCode)) {
+      return 'Kode Unit hanya boleh berisi huruf';
+    }
+
+    return null;
+  }
+
+  String? validateUnitSequence(String? value) {
+    final unitSequence = value
+        ?.replaceAll(
+      RegExp(r'\s+'),
+      '',
+    ) ?? '';
+
+    if (unitSequence.isEmpty) {
+      return 'Nomor Unit wajib diisi';
+    }
+
+    if (!RegExp(r'^\d+$').hasMatch(unitSequence)) {
+      return 'Nomor Unit hanya boleh berisi angka';
     }
 
     return null;
@@ -316,20 +401,57 @@ class _MasterUnitDialogState
                   jobSitesAsync,
                 ),
                 const SizedBox(height: 10),
-                TextFormField(
-                  controller:
-                  unitNumberController,
-                  textCapitalization:
-                  TextCapitalization.characters,
-                  style: const TextStyle(
-                    fontSize: 12.5,
-                  ),
-                  decoration: buildDecoration(
-                    label: 'Nomor Unit',
-                    icon:
-                    Icons.confirmation_number_outlined,
-                  ),
-                  validator: validateRequired,
+                Row(
+                  crossAxisAlignment:
+                  CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: TextFormField(
+                        controller: unitCodeController,
+                        textCapitalization:
+                        TextCapitalization.characters,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.allow(
+                            RegExp(r'[a-zA-Z]'),
+                          ),
+                          LengthLimitingTextInputFormatter(6),
+                        ],
+                        style: const TextStyle(
+                          fontSize: 12.5,
+                        ),
+                        decoration: buildDecoration(
+                          label: 'Kode Unit cth: TU',
+                          icon: Icons.text_fields_outlined,
+                        ),
+                        validator: validateUnitCode,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      flex: 3,
+                      child: TextFormField(
+                        controller:
+                        unitSequenceController,
+                        keyboardType:
+                        TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                          LengthLimitingTextInputFormatter(8,
+                          ),
+                        ],
+                        style: const TextStyle(
+                          fontSize: 12.5,
+                        ),
+                        decoration: buildDecoration(
+                          label: 'Nomor Unit cth: 104',
+                          icon: Icons
+                              .confirmation_number_outlined,
+                        ),
+                        validator: validateUnitSequence,
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 10),
                 DropdownButtonFormField<String>(

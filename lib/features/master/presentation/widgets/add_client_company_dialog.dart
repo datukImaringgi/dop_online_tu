@@ -29,24 +29,12 @@ class _AddClientCompanyDialogState
   final companyCodeController =
   TextEditingController();
 
-  final addressController =
-  TextEditingController();
-
-  final phoneController =
-  TextEditingController();
-
-  final emailController =
-  TextEditingController();
-
   bool isSaving = false;
 
   @override
   void dispose() {
     companyNameController.dispose();
     companyCodeController.dispose();
-    addressController.dispose();
-    phoneController.dispose();
-    emailController.dispose();
     super.dispose();
   }
 
@@ -86,9 +74,6 @@ class _AddClientCompanyDialogState
         companyNameController.text,
         companyCode:
         companyCodeController.text,
-        address: addressController.text,
-        phone: phoneController.text,
-        email: emailController.text,
       );
 
       ref.invalidate(
@@ -220,12 +205,6 @@ class _AddClientCompanyDialogState
                 buildCompanyNameField(),
                 const SizedBox(height: 12),
                 buildCompanyCodeField(),
-                const SizedBox(height: 12),
-                buildAddressField(),
-                const SizedBox(height: 12),
-                buildPhoneField(),
-                const SizedBox(height: 12),
-                buildEmailField(),
               ],
             ),
           ),
@@ -342,64 +321,6 @@ class _AddClientCompanyDialogState
         icon: Icons.tag_outlined,
       ),
       validator: validateCompanyCode,
-    );
-  }
-
-  Widget buildAddressField() {
-    return TextFormField(
-      controller: addressController,
-      enabled: !isSaving,
-      minLines: 2,
-      maxLines: 3,
-      textCapitalization:
-      TextCapitalization.sentences,
-      style: const TextStyle(
-        color: Color(0xFF0F172A),
-        fontSize: 13,
-      ),
-      decoration: buildInputDecoration(
-        label: 'Alamat',
-        hint: 'Opsional',
-        icon: Icons.location_city_outlined,
-        alignLabelWithHint: true,
-      ),
-    );
-  }
-
-  Widget buildPhoneField() {
-    return TextFormField(
-      controller: phoneController,
-      enabled: !isSaving,
-      keyboardType: TextInputType.phone,
-      style: const TextStyle(
-        color: Color(0xFF0F172A),
-        fontSize: 13,
-      ),
-      decoration: buildInputDecoration(
-        label: 'Nomor Telepon',
-        hint: 'Opsional',
-        icon: Icons.phone_outlined,
-      ),
-      validator: validatePhone,
-    );
-  }
-
-  Widget buildEmailField() {
-    return TextFormField(
-      controller: emailController,
-      enabled: !isSaving,
-      keyboardType:
-      TextInputType.emailAddress,
-      style: const TextStyle(
-        color: Color(0xFF0F172A),
-        fontSize: 13,
-      ),
-      decoration: buildInputDecoration(
-        label: 'Email Perusahaan',
-        hint: 'Opsional',
-        icon: Icons.email_outlined,
-      ),
-      validator: validateEmail,
     );
   }
 

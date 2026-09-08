@@ -27,6 +27,7 @@ class MasterPage
 class _MasterPageState
     extends ConsumerState<MasterPage> {
   int selectedMenuIndex = 0;
+  String? selectedFilterCompanyId;
 
   OperationalMasterConfig?
   getSelectedOperationalConfig() {
@@ -51,6 +52,132 @@ class _MasterPageState
     }
 
     return null;
+  }
+
+  void handleCompanyFilterChanged(
+      String? companyId,
+      ) {
+    setState(() {
+      selectedFilterCompanyId = companyId;
+    });
+  }
+
+  List<CompanyUserHierarchyModel>
+  filterUsersByCompany(
+      List<CompanyUserHierarchyModel> users,
+      ) {
+    final companyId = selectedFilterCompanyId;
+
+    if (companyId == null) {
+      return users;
+    }
+
+    final filteredUsers =
+    <CompanyUserHierarchyModel>[];
+
+    for (final user in users) {
+      if (user.companyId == companyId) {
+        filteredUsers.add(user);
+      }
+    }
+
+    return filteredUsers;
+  }
+
+  List<DropdownMenuItem<String?>>
+  buildCompanyFilterItems(
+      List<CompanyUserHierarchyModel> users,
+      ) {
+    final companyNames = <String, String>{};
+
+    for (final user in users) {
+      companyNames[user.companyId] =
+          user.companyName;
+    }
+
+    final entries = companyNames.entries.toList();
+
+    entries.sort(
+      compareCompanyEntries,
+    );
+
+    final items =
+    <DropdownMenuItem<String?>>[
+      const DropdownMenuItem<String?>(
+        value: null,
+        child: Text('Semua Perusahaan'),
+      ),
+    ];
+
+    for (final entry in entries) {
+      items.add(
+        DropdownMenuItem<String?>(
+          value: entry.key,
+          child: Text(
+            entry.value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      );
+    }
+
+    return items;
+  }
+
+  int compareCompanyEntries(
+      MapEntry<String, String> first,
+      MapEntry<String, String> second,
+      ) {
+    return first.value
+        .toLowerCase()
+        .compareTo(
+      second.value.toLowerCase(),
+    );
+  }
+
+  Widget buildCompanyFilter(
+      List<CompanyUserHierarchyModel> users,
+      ) {
+    return SizedBox(
+      width: 210,
+      height: 34,
+      child: DropdownButtonFormField<String?>(
+        value: selectedFilterCompanyId,
+        isExpanded: true,
+        items: buildCompanyFilterItems(users),
+        onChanged: handleCompanyFilterChanged,
+        style: const TextStyle(
+          color: Color(0xFF0F172A),
+          fontSize: 11.5,
+          fontWeight: FontWeight.w500,
+        ),
+        decoration: InputDecoration(
+          labelText: 'Perusahaan',
+          labelStyle: const TextStyle(
+            color: Color(0xFF64748B),
+            fontSize: 10,
+          ),
+          isDense: true,
+          contentPadding:
+          const EdgeInsets.symmetric(
+            horizontal: 10,
+            vertical: 7,
+          ),
+          border: OutlineInputBorder(
+            borderRadius:
+            BorderRadius.circular(7),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius:
+            BorderRadius.circular(7),
+            borderSide: const BorderSide(
+              color: Color(0xFFCBD5E1),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   void _handleEditUser(
@@ -570,6 +697,13 @@ class _MasterPageState
     required String? currentCompanyId,
     required String? currentCompanyName,
   }) {
+    final isLayerFive =
+        currentHierarchyLayer == 5;
+
+    final displayedUsers = isLayerFive
+        ? filterUsersByCompany(users)
+        : users;
+
     return Card(
       margin: EdgeInsets.zero,
       elevation: 0,
@@ -621,6 +755,10 @@ class _MasterPageState
                     ),
                   ),
                 ),
+                if (isLayerFive) ...[
+                  buildCompanyFilter(users),
+                  const SizedBox(width: 8),
+                ],
                 OutlinedButton.icon(
                   onPressed: () {
                     ref.invalidate(
@@ -707,13 +845,12 @@ class _MasterPageState
             color: Color(0xFFE2E8F0),
           ),
           Expanded(
-            child: users.isEmpty
+            child: displayedUsers.isEmpty
                 ? _buildEmptyState()
                 : _UserHierarchyTable(
-              users: users,
+              users: displayedUsers,
               onEdit: (
-                  CompanyUserHierarchyModel
-                  user,
+                  CompanyUserHierarchyModel user,
                   ) {
                 _handleEditUser(
                   context,

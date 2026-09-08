@@ -465,7 +465,7 @@ class _DopDataTableState extends State<_DopDataTable> {
       columns: const [
         DataColumn2(
           label: Text('Status'),
-          fixedWidth: 100,
+          fixedWidth: 120,
         ),
         DataColumn2(
           label: Text('No. DOP'),

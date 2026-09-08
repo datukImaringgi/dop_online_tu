@@ -151,12 +151,6 @@ class OperationalMasterConfig {
         OperationalMasterFieldType.text,
         isRequired: true,
       ),
-      OperationalMasterFieldConfig(
-        key: 'location',
-        label: 'Lokasi',
-        type:
-        OperationalMasterFieldType.text,
-      ),
     ],
   );
 

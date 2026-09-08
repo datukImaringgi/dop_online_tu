@@ -251,10 +251,10 @@ class AppShell extends ConsumerWidget {
                       children: [
                         Expanded(
                           flex: 11,
-                          child: Image.asset(
-                            'assets/images/berau_coal_logo.png',
+                          child: Image.network(
+                            'https://edtuzimhejrluwljkihb.supabase.co/storage/v1/object/public/public-assets/logos/berau_coal_logo.jpg',
                             fit: BoxFit.contain,
-                          ),
+                          )
                         ),
                         Container(
                           width: 1,
@@ -266,16 +266,16 @@ class AppShell extends ConsumerWidget {
                         ),
                         Expanded(
                           flex: 10,
-                          child: Image.asset(
-                            'assets/images/trakindo_cat_logo.png',
+                          child: Image.network(
+                            'https://edtuzimhejrluwljkihb.supabase.co/storage/v1/object/public/public-assets/logos/trakindo_cat_logo.png',
                             fit: BoxFit.contain,
-                          ),
+                          )
                         ),
                       ],
                     ),
                   ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 26),
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: 16),
                   child: Align(
@@ -312,7 +312,7 @@ class AppShell extends ConsumerWidget {
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 15,
+                            fontSize: 12.5,
                             fontWeight: FontWeight.w700,
                           ),
                         );
