@@ -16,7 +16,6 @@ class DopActivityForm extends StatelessWidget {
   final TextEditingController layer3Controller;
   final TextEditingController layer4Controller;
 
-  final String selectedAreaType;
   final String selectedShift;
 
   final String? selectedUnitId;
@@ -43,7 +42,6 @@ class DopActivityForm extends StatelessWidget {
   final bool isSubmitting;
   final bool isEditing;
 
-  final ValueChanged<String> onAreaChanged;
   final ValueChanged<String> onShiftChanged;
 
   final ValueChanged<String?> onUnitChanged;
@@ -75,7 +73,6 @@ class DopActivityForm extends StatelessWidget {
     required this.layer3Controller,
     required this.layer4Controller,
     required this.onRouteIdChanged,
-    required this.selectedAreaType,
     required this.selectedShift,
     required this.selectedUnitId,
     required this.selectedDriverId,
@@ -96,7 +93,6 @@ class DopActivityForm extends StatelessWidget {
     required this.employees,
     required this.isSubmitting,
     required this.isEditing,
-    required this.onAreaChanged,
     required this.onShiftChanged,
     required this.onUnitChanged,
     required this.onDriverChanged,
@@ -848,7 +844,7 @@ class DopActivityForm extends StatelessWidget {
       children: [
         DopFormGridRow(
           children: [
-            _buildAreaField(),
+            _buildRouteField(),
             _buildShiftField(),
             _buildUnitField(),
             _buildDriverField(),
@@ -864,7 +860,7 @@ class DopActivityForm extends StatelessWidget {
           children: [
             _buildStartTimeField(),
             _buildEndTimeField(),
-            _buildRouteField(),
+            _buildObserverField(),
           ],
         ),
         const DopFormGridDivider(),
@@ -875,7 +871,6 @@ class DopActivityForm extends StatelessWidget {
             2,
           ],
           children: [
-            _buildObserverField(),
             _buildJsaField(),
             _buildRicField(),
           ],
@@ -890,7 +885,7 @@ class DopActivityForm extends StatelessWidget {
         Row(
           children: [
             Expanded(
-              child: _buildAreaField(),
+              child: _buildRouteField(),
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -923,8 +918,6 @@ class DopActivityForm extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 10),
-        _buildRouteField(),
-        const SizedBox(height: 10),
         _buildObserverField(),
         const SizedBox(height: 10),
         _buildJsaField(),
@@ -937,7 +930,7 @@ class DopActivityForm extends StatelessWidget {
   Widget _buildMobileActivityFields() {
     return Column(
       children: [
-        _buildAreaField(),
+        _buildRouteField(),
         const SizedBox(height: 10),
         _buildShiftField(),
         const SizedBox(height: 10),
@@ -949,8 +942,6 @@ class DopActivityForm extends StatelessWidget {
         const SizedBox(height: 10),
         _buildEndTimeField(),
         const SizedBox(height: 10),
-        _buildRouteField(),
-        const SizedBox(height: 10),
         _buildObserverField(),
         const SizedBox(height: 10),
         _buildJsaField(),
@@ -960,27 +951,9 @@ class DopActivityForm extends StatelessWidget {
     );
   }
 
-  Widget _buildAreaField() {
-    return DopSimpleDropdown(
-      label: 'Lokasi Tujuan',
-      value: selectedAreaType,
-      items: const [
-        DropdownMenuItem<String>(
-          value: 'jalan_negara',
-          child: Text('Area Jalan Negara'),
-        ),
-        DropdownMenuItem<String>(
-          value: 'site',
-          child: Text('Area Site'),
-        ),
-      ],
-      onChanged: onAreaChanged,
-    );
-  }
-
   Widget _buildShiftField() {
     return DopSimpleDropdown(
-      label: 'Shift',
+      label: 'Shift Pengantaran Karyawan',
       value: selectedShift,
       items: const [
         DropdownMenuItem<String>(

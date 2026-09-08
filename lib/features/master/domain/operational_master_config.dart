@@ -19,6 +19,7 @@ enum OperationalMasterFieldType {
   multiline,
   date,
   jobSite,
+  areaType,
 }
 
 class OperationalMasterConfig {
@@ -123,6 +124,12 @@ class OperationalMasterConfig {
         label: 'Tujuan',
         type:
         OperationalMasterFieldType.text,
+        isRequired: true,
+      ),
+      OperationalMasterFieldConfig(
+        key: 'area_type',
+        label: 'Area Tujuan',
+        type: OperationalMasterFieldType.areaType,
         isRequired: true,
       ),
     ],

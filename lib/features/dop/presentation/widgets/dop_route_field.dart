@@ -172,7 +172,15 @@ class _DopRouteFieldState extends State<DopRouteField> {
 
   String? validateRoute(String? value) {
     if (value == null || value.trim().isEmpty) {
-      return 'Rute wajib diisi';
+      return 'Rute wajib dipilih';
+    }
+
+    if (widget.selectedRouteId == null) {
+      return 'Pilih Rute dari daftar Master Rute';
+    }
+
+    if (!hasValidRouteSelection()) {
+      return 'Pilihan Rute tidak valid';
     }
 
     return null;
@@ -236,7 +244,7 @@ class _DopRouteFieldState extends State<DopRouteField> {
       ),
       decoration: buildCompactInputDecoration(
         label: 'Rute',
-        hintText: 'Pilih suggestion atau ketik rute baru',
+        hintText: 'Cari dan pilih Master Rute',
         suffixIcon: const Icon(
           Icons.route_outlined,
           size: 17,

@@ -70,13 +70,16 @@ class _MasterUnitDialogState
         unit.unitNumber,
       );
       ownerCompanyController.text =
-          unit.ownerCompany;
+          unit.companyName;
       isActive = unit.isActive;
       return;
     }
 
     selectedCompanyId =
         widget.fixedCompanyId;
+
+    ownerCompanyController.text =
+        widget.fixedCompanyName ?? '';
   }
 
   void applyExistingUnitNumber(
@@ -480,22 +483,6 @@ class _MasterUnitDialogState
                   handleUnitTypeChanged,
                 ),
                 const SizedBox(height: 10),
-                TextFormField(
-                  controller:
-                  ownerCompanyController,
-                  textCapitalization:
-                  TextCapitalization.words,
-                  style: const TextStyle(
-                    fontSize: 12.5,
-                  ),
-                  decoration: buildDecoration(
-                    label: 'Perusahaan Pemilik',
-                    icon:
-                    Icons.business_outlined,
-                  ),
-                  validator: validateRequired,
-                ),
-                const SizedBox(height: 8),
                 SwitchListTile(
                   value: isActive,
                   onChanged: isSaving
@@ -606,8 +593,7 @@ class _MasterUnitDialogState
   Widget buildCompanyDropdown(
       List<ActiveCompanyOption> companies,
       ) {
-    final items =
-    <DropdownMenuItem<String>>[];
+    final items = <DropdownMenuItem<String>>[];
 
     for (final company in companies) {
       items.add(
@@ -629,7 +615,22 @@ class _MasterUnitDialogState
         icon: Icons.business_outlined,
       ),
       items: items,
-      onChanged: handleCompanyChanged,
+      onChanged: (String? value) {
+        handleCompanyChanged(value);
+
+        if (value == null) {
+          ownerCompanyController.clear();
+          return;
+        }
+
+        for (final company in companies) {
+          if (company.id == value) {
+            ownerCompanyController.text =
+                company.displayName;
+            return;
+          }
+        }
+      },
       validator: validateRequired,
     );
   }

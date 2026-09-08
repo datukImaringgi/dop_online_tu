@@ -13,6 +13,17 @@ class OperationalMasterSection
   final String? fixedCompanyId;
   final String? fixedCompanyName;
 
+  bool get hasJobSiteField {
+    for (final field in config.fields) {
+      if (field.type ==
+          OperationalMasterFieldType.jobSite) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   const OperationalMasterSection({
     super.key,
     required this.config,
@@ -362,45 +373,99 @@ class OperationalMasterSection
       );
     }
 
-    return Align(
-      alignment: Alignment.topLeft,
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: SingleChildScrollView(
-          child: DataTable(
-            headingRowHeight: 38,
-            dataRowMinHeight: 42,
-            dataRowMaxHeight: 48,
-            horizontalMargin: 12,
-            columnSpacing: 24,
-            headingRowColor:
-            WidgetStateProperty.all(
-              const Color(0xFFF8FAFC),
+    return LayoutBuilder(
+        builder: (
+            BuildContext context,
+            BoxConstraints constraints,
+            ) {
+          return SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minWidth: constraints.maxWidth,
+              ),
+              child: SingleChildScrollView(
+                child: DataTable(
+                  headingRowHeight: 38,
+                  dataRowMinHeight: 42,
+                  dataRowMaxHeight: 48,
+                  horizontalMargin: 12,
+                  columnSpacing: 24,
+                  headingRowColor:
+                  WidgetStateProperty.all(
+                    const Color(0xFFF8FAFC),
+                  ),
+                  columns: buildColumns(),
+                  rows: buildRows(
+                    context: context,
+                    ref: ref,
+                    records: records,
+                  ),
+                ),
+              ),
             ),
-            columns: buildColumns(),
-            rows: buildRows(
-              context: context,
-              ref: ref,
-              records: records,
-            ),
-          ),
-        ),
-      ),
+          );
+        },
     );
   }
 
   List<DataColumn> buildColumns() {
     final columns = <DataColumn>[
-      const DataColumn(
-        label: Text('Nama Data'),
+      DataColumn(
+        label: Text(
+          config.masterType == 'route'
+              ? 'Route'
+              : config.masterType == 'jsa_procedure'
+              ? 'Deskripsi Prosedur'
+              : config.masterType == 'driver'
+              ? 'Nama Driver'
+              : config.masterType == 'control_room'
+              ? 'RIC Person'
+              : config.masterType == 'job_site'
+              ? 'Job Site'
+              : 'Nama Data',
+        ),
       ),
+    ];
+
+    if (config.masterType == 'job_site') {
+      columns.add(
+        const DataColumn(
+          label: Text('Kode'),
+        ),
+      );
+    }
+
+    if (config.masterType == 'route') {
+      columns.add(
+        const DataColumn(
+          label: Text('Area Tujuan'),
+        ),
+      );
+    }
+
+    columns.add(
       const DataColumn(
         label: Text('Perusahaan'),
       ),
-      const DataColumn(
-        label: Text('Job Site'),
-      ),
-    ];
+    );
+
+    if (hasJobSiteField) {
+      columns.add(
+        const DataColumn(
+          label: Text('Job Site'),
+        ),
+      );
+    }
+
+    if (config.masterType == 'jsa_procedure') {
+      columns.insert(
+        0,
+        const DataColumn(
+          label: Text('Kode Prosedur'),
+        ),
+      );
+    }
 
     if (config.masterType == 'driver') {
       columns.add(
@@ -447,11 +512,37 @@ class OperationalMasterSection
       rows.add(
         DataRow(
           cells: [
+            if (config.masterType == 'jsa_procedure')
+              DataCell(
+                Text(
+                  record['procedure_code']
+                      ?.toString()
+                      .trim() ??
+                      '-',
+                ),
+              ),
             DataCell(
               Text(
                 config.displayName(record),
               ),
             ),
+            if (config.masterType == 'job_site')
+              DataCell(
+                Text(
+                  record['site_code']
+                      ?.toString()
+                      .trim() ??
+                      '-',
+                ),
+              ),
+            if (config.masterType == 'route')
+              DataCell(
+                Text(
+                  formatAreaType(
+                    record['area_type'],
+                  ),
+                ),
+              ),
             DataCell(
               Text(
                 readRelationValue(
@@ -461,15 +552,16 @@ class OperationalMasterSection
                 ),
               ),
             ),
-            DataCell(
-              Text(
-                readRelationValue(
-                  record,
-                  'job_sites',
-                  'site_name',
+            if (hasJobSiteField)
+              DataCell(
+                Text(
+                  readRelationValue(
+                    record,
+                    'job_sites',
+                    'site_name',
+                  ),
                 ),
               ),
-            ),
 
             if (config.masterType == 'driver')
               DataCell(
@@ -537,6 +629,21 @@ class OperationalMasterSection
     }
 
     return rows;
+  }
+
+  String formatAreaType(dynamic value) {
+    final areaType =
+        value?.toString().trim() ?? '';
+
+    if (areaType == 'site') {
+      return 'Area Site';
+    }
+
+    if (areaType == 'jalan_negara') {
+      return 'Area Jalan Negara';
+    }
+
+    return '-';
   }
 
   String formatDateValue(dynamic value) {

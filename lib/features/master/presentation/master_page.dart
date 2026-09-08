@@ -31,7 +31,7 @@ class _MasterPageState
 
   OperationalMasterConfig?
   getSelectedOperationalConfig() {
-    if (selectedMenuIndex == 2) {
+    if (selectedMenuIndex == 0) {
       return OperationalMasterConfig.jobSite;
     }
 
@@ -342,7 +342,7 @@ class _MasterPageState
     required String? companyId,
     required String? companyName,
   }) {
-    if (selectedMenuIndex == 0) {
+    if (selectedMenuIndex == 1) {
       return usersAsync.when(
         loading: _buildLoading,
         error: _buildError,
@@ -365,7 +365,7 @@ class _MasterPageState
       );
     }
 
-    if (selectedMenuIndex == 1) {
+    if (selectedMenuIndex == 2) {
       return MasterUnitSection(
         onAdd: () {
           _handleAddUnit(
@@ -491,23 +491,20 @@ class _MasterPageState
             children: [
               _buildMasterMenuButton(
                 index: 0,
-                label: 'User & Hierarchy',
-                icon:
-                Icons.manage_accounts_outlined,
+                label: 'Job Site Mitra',
+                icon: Icons.location_on_outlined,
               ),
               const SizedBox(width: 4),
               _buildMasterMenuButton(
                 index: 1,
-                label: 'Master Unit',
-                icon:
-                Icons.directions_bus_outlined,
+                label: 'User & Hierarchy',
+                icon: Icons.manage_accounts_outlined,
               ),
               const SizedBox(width: 4),
               _buildMasterMenuButton(
                 index: 2,
-                label: 'Job Site',
-                icon:
-                Icons.location_on_outlined,
+                label: 'Master Unit',
+                icon: Icons.directions_bus_outlined,
               ),
               const SizedBox(width: 4),
               _buildMasterMenuButton(

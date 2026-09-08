@@ -275,9 +275,6 @@ class MasterUnitSection
               label: Text('Job Site'),
             ),
             DataColumn(
-              label: Text('Pemilik Unit'),
-            ),
-            DataColumn(
               label: Text('Status'),
             ),
             DataColumn(
@@ -319,9 +316,6 @@ class MasterUnitSection
             ),
             DataCell(
               Text(unit.jobSiteName),
-            ),
-            DataCell(
-              Text(unit.ownerCompany),
             ),
             DataCell(
               _UnitStatusSwitch(

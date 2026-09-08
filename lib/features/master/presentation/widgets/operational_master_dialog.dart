@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter/services.dart';
 
 import '../../data/active_companies_provider.dart';
 import '../../data/assignment_job_sites_provider.dart';
 import '../../data/master_change_request_provider.dart';
 import '../../data/operational_master_repository.dart';
 import '../../domain/operational_master_config.dart';
+import '../../domain/client_company_result.dart';
+import 'add_client_company_dialog.dart';
+import 'company_autocomplete_field.dart';
 
 class OperationalMasterDialog
     extends ConsumerStatefulWidget {
@@ -55,6 +57,7 @@ class _OperationalMasterDialogState
 
   String? selectedCompanyId;
   String? selectedJobSiteId;
+  ClientCompanyResult? newlyRegisteredCompany;
 
   bool isActive = true;
   bool isSaving = false;
@@ -143,12 +146,60 @@ class _OperationalMasterDialogState
     return text;
   }
 
+  void handleCompanySelected(
+      ActiveCompanyOption company,
+      ) {
+    setState(() {
+      selectedCompanyId = company.id;
+      selectedJobSiteId = null;
+    });
+  }
+
   void handleCompanyChanged(String? value) {
     setState(() {
       selectedCompanyId = value;
       selectedJobSiteId = null;
     });
   }
+
+  Future<void> handleRegisterCompany() async {
+    if (!widget.isLayerFive ||
+        widget.config.masterType != 'job_site' ||
+        isSaving) {
+      return;
+    }
+
+    final result =
+    await showDialog<ClientCompanyResult>(
+      context: context,
+      barrierDismissible: false,
+      builder: (
+          BuildContext dialogContext,
+          ) {
+        return const AddClientCompanyDialog();
+      },
+    );
+
+    if (result == null || !mounted) {
+      return;
+    }
+
+    ref.invalidate(activeCompaniesProvider);
+
+    setState(() {
+      selectedCompanyId = result.companyId;
+      newlyRegisteredCompany = result;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor:
+        const Color(0xFF059669),
+        content: Text(result.message),
+      ),
+    );
+  }
+
 
   void handleJobSiteChanged(String? value) {
     setState(() {
@@ -590,22 +641,62 @@ class _OperationalMasterDialogState
       AsyncValue<List<ActiveCompanyOption>>
       companiesAsync,
       ) {
-    if (!widget.isLayerFive) {
-      return buildFixedCompany();
-    }
+    Widget companyField;
 
-    if (widget.isEditing) {
-      return companiesAsync.when(
+    if (!widget.isLayerFive) {
+      companyField = buildFixedCompany();
+    } else if (widget.isEditing) {
+      companyField = companiesAsync.when(
         loading: buildLoadingField,
         error: buildCompanyError,
         data: buildLockedCompanyDropdown,
       );
+    } else {
+      companyField = companiesAsync.when(
+        loading: buildLoadingField,
+        error: buildCompanyError,
+        data: buildCompanyDropdown,
+      );
     }
 
-    return companiesAsync.when(
-      loading: buildLoadingField,
-      error: buildCompanyError,
-      data: buildCompanyDropdown,
+    if (!widget.isLayerFive ||
+        widget.isEditing ||
+        widget.config.masterType != 'job_site') {
+      return companyField;
+    }
+
+    return Column(
+      crossAxisAlignment:
+      CrossAxisAlignment.start,
+      children: [
+        companyField,
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            const Expanded(
+              child: Text(
+                'Perusahaan belum tersedia?',
+                style: TextStyle(
+                  color: Color(0xFF64748B),
+                  fontSize: 11,
+                ),
+              ),
+            ),
+            TextButton.icon(
+              onPressed: isSaving
+                  ? null
+                  : handleRegisterCompany,
+              icon: const Icon(
+                Icons.add_business_outlined,
+                size: 16,
+              ),
+              label: const Text(
+                'Daftarkan Perusahaan Baru',
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -624,15 +715,48 @@ class _OperationalMasterDialogState
   Widget buildCompanyDropdown(
       List<ActiveCompanyOption> companies,
       ) {
-    return DropdownButtonFormField<String>(
-      value: selectedCompanyId,
-      isExpanded: true,
-      decoration: inputDecoration(
-        'Perusahaan',
+    final availableCompanies =
+    <ActiveCompanyOption>[];
+
+    for (final company in companies) {
+      availableCompanies.add(company);
+    }
+
+    final registeredCompany =
+        newlyRegisteredCompany;
+
+    if (registeredCompany != null) {
+      var alreadyAvailable = false;
+
+      for (final company in availableCompanies) {
+        if (company.id ==
+            registeredCompany.companyId) {
+          alreadyAvailable = true;
+          break;
+        }
+      }
+
+      if (!alreadyAvailable) {
+        availableCompanies.add(
+          ActiveCompanyOption(
+            id: registeredCompany.companyId,
+            companyName:
+            registeredCompany.companyName,
+            companyCode:
+            registeredCompany.companyCode,
+          ),
+        );
+      }
+    }
+
+    return CompanyAutocompleteField(
+      key: ValueKey<String?>(
+        selectedCompanyId,
       ),
-      items: buildCompanyItems(companies),
-      onChanged: handleCompanyChanged,
-      validator: validateCompany,
+      companies: availableCompanies,
+      selectedCompanyId: selectedCompanyId,
+      enabled: !isSaving,
+      onSelected: handleCompanySelected,
     );
   }
 
@@ -713,12 +837,15 @@ class _OperationalMasterDialogState
           List<AssignmentJobSiteOption>>?
       jobSitesAsync,
       ) {
-    if (field.type ==
-        OperationalMasterFieldType.jobSite) {
+    if (field.type == OperationalMasterFieldType.jobSite) {
       return buildJobSiteField(
         field,
         jobSitesAsync,
       );
+    }
+
+    if (field.type == OperationalMasterFieldType.areaType) {
+      return buildAreaTypeField(field);
     }
 
     final controller =
@@ -755,6 +882,44 @@ class _OperationalMasterDialogState
           : 1,
       decoration:
       inputDecoration(field.label),
+      validator: field.isRequired
+          ? validateRequired
+          : null,
+    );
+  }
+
+  Widget buildAreaTypeField(
+      OperationalMasterFieldConfig field,
+      ) {
+    final controller =
+    controllers[field.key]!;
+
+    final currentValue =
+    controller.text.trim();
+
+    return DropdownButtonFormField<String>(
+      value: currentValue.isEmpty
+          ? null
+          : currentValue,
+      isExpanded: true,
+      decoration: inputDecoration(
+        field.label,
+      ),
+      items: const [
+        DropdownMenuItem<String>(
+          value: 'site',
+          child: Text('Area Site'),
+        ),
+        DropdownMenuItem<String>(
+          value: 'jalan_negara',
+          child: Text(
+            'Area Jalan Negara',
+          ),
+        ),
+      ],
+      onChanged: (String? value) {
+        controller.text = value ?? '';
+      },
       validator: field.isRequired
           ? validateRequired
           : null,

@@ -857,9 +857,10 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
       return;
     }
 
-    final routeName = routeController.text.trim();
-    if (routeName.isEmpty) {
-      showMessage('Rute wajib diisi');
+    if (selectedRouteId == null) {
+      showMessage(
+        'Rute wajib dipilih dari Master Rute',
+      );
       return;
     }
 
@@ -885,6 +886,7 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
 
     final selectedUnit = findById(units, selectedUnitId);
     final selectedDriver = findById(drivers, selectedDriverId);
+    final selectedRoute = findById(routes, selectedRouteId);
     final selectedJsa = findById(jsaProcedures, selectedJsaId);
     final selectedControlRoom = findById(
       controlRooms,
@@ -893,9 +895,37 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
 
     if (selectedUnit == null ||
         selectedDriver == null ||
+        selectedRoute == null ||
         selectedJsa == null ||
         selectedControlRoom == null) {
-      showMessage('Data master aktivitas tidak valid');
+      showMessage(
+        'Data master aktivitas tidak valid',
+      );
+      return;
+    }
+
+    final routeName =
+        selectedRoute['route_name']
+            ?.toString()
+            .trim() ?? '';
+
+    final routeAreaType =
+        selectedRoute['area_type']
+            ?.toString()
+            .trim() ?? '';
+
+    if (routeName.isEmpty) {
+      showMessage(
+        'Nama Master Rute tidak valid',
+      );
+      return;
+    }
+
+    if (routeAreaType != 'site' &&
+        routeAreaType != 'jalan_negara') {
+      showMessage(
+        'Area Tujuan pada Master Rute belum valid',
+      );
       return;
     }
 
@@ -938,7 +968,7 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
     final draft = DopActivityDraft(
       localId: currentLocalId,
       workPlan: workPlanController.text.trim(),
-      areaType: selectedAreaType,
+      areaType: routeAreaType,
       shift: selectedShift,
       unitId: selectedUnitId!,
       unitType: selectedUnit['unit_type'] as String? ?? '-',
@@ -953,7 +983,7 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
       selectedDriver['simper_expired_date'] as String?,
       startTime: formatTimeOfDay(startTime!),
       endTime: formatTimeOfDay(endTime!),
-      routeId: selectedRouteId,
+      routeId: selectedRouteId!,
       routeName: routeName,
       observer: observerController.text.trim(),
       jsaId: selectedJsaId!,
@@ -1195,12 +1225,6 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
   void handleControlRoomChanged(String? value) {
     setState(() {
       selectedControlRoomId = value;
-    });
-  }
-
-  void handleAreaChanged(String value) {
-    setState(() {
-      selectedAreaType = value;
     });
   }
 
@@ -1487,7 +1511,6 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
                         layer2Controller: layer2Controller,
                         layer3Controller: layer3Controller,
                         layer4Controller: layer4Controller,
-                        selectedAreaType: selectedAreaType,
                         selectedShift: selectedShift,
                         selectedUnitId: selectedUnitId,
                         selectedDriverId: selectedDriverId,
@@ -1508,7 +1531,6 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
                         employees: employees,
                         isSubmitting: isSubmitting,
                         isEditing: editingDraftId != null,
-                        onAreaChanged: handleAreaChanged,
                         onShiftChanged: handleShiftChanged,
                         onUnitChanged: handleUnitChanged,
                         onDriverChanged: handleDriverChanged,

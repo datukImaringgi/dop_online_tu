@@ -5,10 +5,7 @@ import '../../data/active_companies_provider.dart';
 import '../../data/assignment_job_sites_provider.dart';
 import '../../data/company_user_hierarchy_provider.dart';
 import '../../data/company_user_registration_repository.dart';
-import '../../domain/client_company_result.dart';
-import 'add_client_company_dialog.dart';
 import 'company_autocomplete_field.dart';
-import '../../data/master_change_request_provider.dart';
 
 class AddCompanyUserDialog
     extends ConsumerStatefulWidget {
@@ -60,8 +57,6 @@ class _AddCompanyUserDialogState
   String? selectedJobSiteId;
   int? selectedHierarchyLayer;
 
-  ClientCompanyResult? newlyRegisteredCompany;
-
   bool isPasswordVisible = false;
   bool isActive = true;
   bool isSaving = false;
@@ -100,7 +95,6 @@ class _AddCompanyUserDialogState
     setState(() {
       selectedCompanyId = value;
       selectedJobSiteId = null;
-      newlyRegisteredCompany = null;
     });
   }
 
@@ -110,56 +104,7 @@ class _AddCompanyUserDialogState
     setState(() {
       selectedCompanyId = company.id;
       selectedJobSiteId = null;
-      newlyRegisteredCompany = null;
     });
-  }
-
-  Future<void> handleRegisterCompany() async {
-    if (!widget.isPlatformSuperAdmin ||
-        isSaving) {
-      return;
-    }
-
-    final result =
-    await showDialog<ClientCompanyResult>(
-      context: context,
-      barrierDismissible: false,
-      builder: (
-          BuildContext dialogContext,
-          ) {
-        return const AddClientCompanyDialog();
-      },
-    );
-
-    if (result == null || !mounted) {
-      return;
-    }
-
-    ref.invalidate(
-      activeCompaniesProvider,
-    );
-
-    ref.invalidate(
-      masterChangeRequestsProvider,
-    );
-
-    ref.invalidate(
-      pendingMasterChangeCountProvider,
-    );
-
-    setState(() {
-      selectedCompanyId = result.companyId;
-      selectedJobSiteId = null;
-      newlyRegisteredCompany = result;
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor:
-        const Color(0xFF059669),
-        content: Text(result.message),
-      ),
-    );
   }
 
   void handleJobSiteChanged(String? value) {
@@ -486,57 +431,11 @@ class _AddCompanyUserDialogState
       AsyncValue<List<ActiveCompanyOption>>
       companiesAsync,
       ) {
-    return Column(
-      crossAxisAlignment:
-      CrossAxisAlignment.start,
-      children: [
-        buildCompanyField(
-          companiesAsync,
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            const Expanded(
-              child: Text(
-                'Perusahaan belum tersedia?',
-                style: TextStyle(
-                  color: Color(0xFF64748B),
-                  fontSize: 11,
-                ),
-              ),
-            ),
-            TextButton.icon(
-              onPressed: isSaving
-                  ? null
-                  : handleRegisterCompany,
-              style: TextButton.styleFrom(
-                foregroundColor:
-                const Color(0xFF2563EB),
-                padding:
-                const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 5,
-                ),
-                visualDensity:
-                VisualDensity.compact,
-                textStyle: const TextStyle(
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              icon: const Icon(
-                Icons.add_business_outlined,
-                size: 16,
-              ),
-              label: const Text(
-                'Daftarkan Perusahaan Baru',
-              ),
-            ),
-          ],
-        ),
-      ],
+    return buildCompanyField(
+      companiesAsync,
     );
   }
+
 
 
   Widget buildCompanyField(
@@ -560,51 +459,17 @@ class _AddCompanyUserDialogState
   Widget buildCompanyDropdown(
       List<ActiveCompanyOption> companies,
       ) {
-    final availableCompanies =
-    <ActiveCompanyOption>[];
-
-    for (final company in companies) {
-      availableCompanies.add(company);
-    }
-
-    final registeredCompany =
-        newlyRegisteredCompany;
-
-    if (registeredCompany != null) {
-      var hasRegisteredCompany = false;
-
-      for (final company
-      in availableCompanies) {
-        if (company.id ==
-            registeredCompany.companyId) {
-          hasRegisteredCompany = true;
-          break;
-        }
-      }
-
-      if (!hasRegisteredCompany) {
-        availableCompanies.add(
-          ActiveCompanyOption(
-            id: registeredCompany.companyId,
-            companyName:
-            registeredCompany.companyName,
-            companyCode:
-            registeredCompany.companyCode,
-          ),
-        );
-      }
-    }
-
     return CompanyAutocompleteField(
       key: ValueKey<String?>(
         selectedCompanyId,
       ),
-      companies: availableCompanies,
+      companies: companies,
       selectedCompanyId: selectedCompanyId,
       enabled: !isSaving,
       onSelected: handleCompanySelected,
     );
   }
+
 
   Widget buildFixedCompanyInformation() {
     final companyName =
