@@ -10,6 +10,7 @@ import 'widgets/dashboard_running_text.dart';
 import 'widgets/dashboard_transport_area.dart';
 import 'widgets/dashboard_compliance.dart';
 import 'widgets/dashboard_filters.dart';
+import 'widgets/dashboard_unit_availability.dart';
 
 class DashboardPage
     extends ConsumerStatefulWidget {
@@ -433,7 +434,9 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                       child: DashboardComplianceCard(rows: complianceRows)
                   ),
                   const SizedBox(width: 16),
-                  const Expanded(child: SizedBox.shrink()),
+                  const Expanded(
+                    child: DashboardUnitAvailabilityCard(),
+                  ),
                 ],
               ),
             ],

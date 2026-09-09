@@ -188,47 +188,59 @@ class _ActivityDataTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scrollbar(
-      thumbVisibility: true,
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: DataTable(
-          headingRowHeight: 34,
-          dataRowMinHeight: 38,
-          dataRowMaxHeight: 38,
-          headingRowColor: WidgetStateProperty.all(
-            const Color(0xFFF8FAFC),
+    return LayoutBuilder(
+      builder: (
+          BuildContext context,
+          BoxConstraints constraints,
+          ) {
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minWidth: constraints.maxWidth,
+            ),
+            child: DataTable(
+              headingRowHeight: 34,
+              dataRowMinHeight: 38,
+              dataRowMaxHeight: 38,
+              headingRowColor:
+              WidgetStateProperty.all(
+                const Color(0xFFF8FAFC),
+              ),
+              headingTextStyle:
+              const TextStyle(
+                color: Color(0xFF334155),
+                fontSize: 10.5,
+                height: 1,
+                fontWeight: FontWeight.w700,
+              ),
+              dataTextStyle:
+              const TextStyle(
+                color: Color(0xFF0F172A),
+                fontSize: 10.5,
+                height: 1.1,
+              ),
+              dividerThickness: 0.7,
+              horizontalMargin: 8,
+              columnSpacing: 14,
+              columns: const [
+                DataColumn(label: Text('No')),
+                DataColumn(label: Text('Action')),
+                DataColumn(label: Text('Unit')),
+                DataColumn(label: Text('Type')),
+                DataColumn(label: Text('Driver')),
+                DataColumn(label: Text('Mulai')),
+                DataColumn(label: Text('Akhir')),
+                DataColumn(label: Text('Rute')),
+                DataColumn(label: Text('Area')),
+                DataColumn(label: Text('Shift')),
+                DataColumn(label: Text('RIC')),
+              ],
+              rows: _buildRows(),
+            ),
           ),
-          headingTextStyle: const TextStyle(
-            color: Color(0xFF334155),
-            fontSize: 10.5,
-            height: 1,
-            fontWeight: FontWeight.w700,
-          ),
-          dataTextStyle: const TextStyle(
-            color: Color(0xFF0F172A),
-            fontSize: 10.5,
-            height: 1.1,
-          ),
-          dividerThickness: 0.7,
-          horizontalMargin: 8,
-          columnSpacing: 14,
-          columns: const [
-            DataColumn(label: Text('No')),
-            DataColumn(label: Text('Action')),
-            DataColumn(label: Text('Unit')),
-            DataColumn(label: Text('Type')),
-            DataColumn(label: Text('Driver')),
-            DataColumn(label: Text('Mulai')),
-            DataColumn(label: Text('Akhir')),
-            DataColumn(label: Text('Rute')),
-            DataColumn(label: Text('Area')),
-            DataColumn(label: Text('Shift')),
-            DataColumn(label: Text('RIC')),
-          ],
-          rows: _buildRows(),
-        ),
-      ),
+        );
+      },
     );
   }
 

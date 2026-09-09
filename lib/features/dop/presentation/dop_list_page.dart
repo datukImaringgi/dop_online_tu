@@ -465,7 +465,7 @@ class _DopDataTableState extends State<_DopDataTable> {
       columns: const [
         DataColumn2(
           label: Text('Status'),
-          fixedWidth: 120,
+          fixedWidth: 80,
         ),
         DataColumn2(
           label: Text('No. DOP'),
@@ -697,10 +697,12 @@ class _StatusBadge extends StatelessWidget {
     final text = _formatStatus(status);
 
     return Container(
+      margin: const EdgeInsets.symmetric(vertical: 4),
       padding: const EdgeInsets.symmetric(
         horizontal: 8,
-        vertical: 4,
+        vertical: 0,
       ),
+      alignment: Alignment.center,
       decoration: BoxDecoration(
         // ignore: deprecated_member_use
         color: badgeColor.withOpacity(0.12),
@@ -708,6 +710,7 @@ class _StatusBadge extends StatelessWidget {
       ),
       child: Text(
         text,
+        textAlign: TextAlign.center,
         style: TextStyle(
           color: badgeColor,
           fontSize: 10.5,
