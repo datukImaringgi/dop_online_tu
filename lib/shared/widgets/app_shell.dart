@@ -7,6 +7,7 @@ import '../providers/user_session_provider.dart';
 import '../../features/approval/data/dop_approval_provider.dart';
 import '../../features/dop/data/dop_revision_list_provider.dart';
 import '../../features/master/data/master_change_request_provider.dart';
+import '../widgets/profile_dialog.dart';
 
 class AppShell extends ConsumerWidget {
   final Widget child;
@@ -455,17 +456,50 @@ class AppShell extends ConsumerWidget {
                             );
                           },
                           data: (companyAccess) {
-                            return _UserCardContent(
-                              fullName:
-                              profile?.fullName ?? '-',
-                              sid:
-                              profile?.sid ?? '-',
-                              hierarchyLayer:
-                              companyAccess?.hierarchyLayer,
-                              position:
-                              companyAccess?.position ?? '-',
-                              notificationEmail:
-                              profile?.notificationEmail ?? '-',
+                            if (profile == null) {
+                              return const Text(
+                                'Profil tidak tersedia',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11.5,
+                                ),
+                              );
+                            }
+
+                            return Tooltip(
+                              message: 'Buka Profil Saya',
+                              child: InkWell(
+                                onTap: () {
+                                  showDialog<void>(
+                                    context: context,
+                                    barrierDismissible: false,
+                                    builder: (
+                                        BuildContext dialogContext,
+                                        ) {
+                                      return ProfileDialog(
+                                        profile: profile,
+                                        companyAccess: companyAccess,
+                                      );
+                                    },
+                                  );
+                                },
+                                borderRadius: BorderRadius.circular(8),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 2,
+                                  ),
+                                  child: _UserCardContent(
+                                    fullName: profile.fullName,
+                                    sid: profile.sid ?? '-',
+                                    hierarchyLayer:
+                                    companyAccess?.hierarchyLayer,
+                                    position:
+                                    companyAccess?.position ?? '-',
+                                    notificationEmail:
+                                    profile.notificationEmail ?? '-',
+                                  ),
+                                ),
+                              ),
                             );
                           },
                         );

@@ -171,11 +171,11 @@ class _EditUserAssignmentDialogState
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Assignment ${widget.user.fullName} '
-                'berhasil diperbarui.',
+            'Perubahan ${widget.user.fullName} '
+                'diajukan Approval ke Layer 5.',
           ),
           backgroundColor:
-          const Color(0xFF059669),
+          const Color(0xFFD97706),
         ),
       );
     } catch (error) {
