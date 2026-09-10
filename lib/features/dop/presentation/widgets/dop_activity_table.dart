@@ -226,6 +226,12 @@ class _ActivityDataTable extends StatelessWidget {
               columns: const [
                 DataColumn(label: Text('No')),
                 DataColumn(label: Text('Action')),
+                DataColumn(
+                  label: SizedBox(
+                    width: 150,
+                    child: Text('Detail Pekerjaan'),
+                  ),
+                ),
                 DataColumn(label: Text('Unit')),
                 DataColumn(label: Text('Type')),
                 DataColumn(label: Text('Driver')),
@@ -268,6 +274,20 @@ class _ActivityDataTable extends StatelessWidget {
                 onEdit: onEdit,
                 onDelete: onDelete,
                 onDuplicate: onDuplicate,
+              ),
+            ),
+            DataCell(
+              SizedBox(
+                width: 150,
+                child: Tooltip(
+                  message: draft.workPlan,
+                  child: Text(
+                    draft.workPlan,
+                    maxLines: 1,
+                    softWrap: false,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
               ),
             ),
             DataCell(

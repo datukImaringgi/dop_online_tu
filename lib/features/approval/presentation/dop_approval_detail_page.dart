@@ -33,7 +33,7 @@ class DopApprovalDetailPage
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9FC),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment:
@@ -46,12 +46,10 @@ class DopApprovalDetailPage
             const SizedBox(height: 16),
             buildDocumentSummary(),
             const SizedBox(height: 16),
-            Expanded(
-              child: detailsAsync.when(
-                loading: buildLoading,
-                error: buildError,
-                data: buildDetailsContent,
-              ),
+            detailsAsync.when(
+              loading: buildLoading,
+              error: buildError,
+              data: buildDetailsContent,
             ),
           ],
         ),
@@ -466,8 +464,11 @@ class DopApprovalDetailPage
   }
 
   Widget buildLoading() {
-    return const Center(
-      child: CircularProgressIndicator(),
+    return const SizedBox(
+      height: 220,
+      child: Center(
+        child: CircularProgressIndicator(),
+      ),
     );
   }
 
@@ -475,47 +476,50 @@ class DopApprovalDetailPage
       Object error,
       StackTrace stackTrace,
       ) {
-    return Center(
-      child: Container(
-        constraints: const BoxConstraints(
-          maxWidth: 560,
-        ),
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          color: const Color(0xFFFEF2F2),
-          borderRadius:
-          BorderRadius.circular(12),
-          border: Border.all(
-            color: const Color(0xFFFECACA),
+    return SizedBox(
+      height: 220,
+      child: Center(
+        child: Container(
+          constraints: const BoxConstraints(
+            maxWidth: 560,
           ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(
-              Icons.error_outline,
-              color: Color(0xFFDC2626),
-              size: 34,
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFEF2F2),
+            borderRadius:
+            BorderRadius.circular(12),
+            border: Border.all(
+              color: const Color(0xFFFECACA),
             ),
-            const SizedBox(height: 10),
-            const Text(
-              'Gagal membaca aktivitas DOP',
-              style: TextStyle(
-                color: Color(0xFF991B1B),
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.error_outline,
+                color: Color(0xFFDC2626),
+                size: 34,
               ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              error.toString(),
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Color(0xFFB91C1C),
-                fontSize: 12,
+              const SizedBox(height: 10),
+              const Text(
+                'Gagal membaca aktivitas DOP',
+                style: TextStyle(
+                  color: Color(0xFF991B1B),
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 6),
+              Text(
+                error.toString(),
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Color(0xFFB91C1C),
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -625,10 +629,8 @@ class DopApprovalDetailPage
             height: 1,
             color: Color(0xFFE2E8F0),
           ),
-          Expanded(
-            child: DopApprovalActivityTable(
-              details: details,
-            ),
+          DopApprovalActivityTable(
+            details: details,
           ),
         ],
       ),
@@ -647,109 +649,124 @@ class DopApprovalActivityTable
 
   @override
   Widget build(BuildContext context) {
-    return DataTable2(
-      fixedTopRows: 1,
-      minWidth: 2850,
-      headingRowHeight: 40,
-      dataRowHeight: 44,
-      horizontalMargin: 12,
-      columnSpacing: 14,
-      dividerThickness: 0.8,
-      isVerticalScrollBarVisible: true,
-      isHorizontalScrollBarVisible: true,
-      headingRowColor: WidgetStateProperty.all(
-        const Color(0xFFF8FAFC),
+    const headingHeight = 40.0;
+    const rowHeight = 44.0;
+
+    final tableHeight =
+        headingHeight +
+            (details.length * rowHeight) +
+            2;
+
+    return SizedBox(
+      height: tableHeight,
+      child: DataTable2(
+        minWidth: 2850,
+        headingRowHeight: headingHeight,
+        dataRowHeight: rowHeight,
+        horizontalMargin: 12,
+        columnSpacing: 14,
+        dividerThickness: 0.8,
+        isVerticalScrollBarVisible: false,
+        isHorizontalScrollBarVisible: true,
+        headingRowColor:
+        WidgetStateProperty.all(
+          const Color(0xFFF8FAFC),
+        ),
+        headingTextStyle:
+        const TextStyle(
+          color: Color(0xFF334155),
+          fontSize: 11,
+          height: 1.1,
+          fontWeight: FontWeight.bold,
+        ),
+        dataTextStyle:
+        const TextStyle(
+          color: Color(0xFF0F172A),
+          fontSize: 11,
+          height: 1.15,
+        ),
+        columns: const [
+          DataColumn2(
+            label: Text('No.'),
+            fixedWidth: 45,
+          ),
+          DataColumn2(
+            label: Text('Rencana Pekerjaan'),
+            fixedWidth: 230,
+          ),
+          DataColumn2(
+            label: Text('Unit'),
+            fixedWidth: 110,
+          ),
+          DataColumn2(
+            label: Text('Type'),
+            fixedWidth: 75,
+          ),
+          DataColumn2(
+            label: Text('Driver'),
+            fixedWidth: 155,
+          ),
+          DataColumn2(
+            label: Text('SID'),
+            fixedWidth: 85,
+          ),
+          DataColumn2(
+            label: Text('Mulai'),
+            fixedWidth: 65,
+          ),
+          DataColumn2(
+            label: Text('Akhir'),
+            fixedWidth: 65,
+          ),
+          DataColumn2(
+            label: Text('Rute'),
+            fixedWidth: 175,
+          ),
+          DataColumn2(
+            label: Text('Tujuan'),
+            fixedWidth: 115,
+          ),
+          DataColumn2(
+            label: Text('Shift'),
+            fixedWidth: 90,
+          ),
+          DataColumn2(
+            label: Text('Observer'),
+            fixedWidth: 130,
+          ),
+          DataColumn2(
+            label: Text('Prosedur / JSA'),
+            fixedWidth: 220,
+          ),
+          DataColumn2(
+            label: Text('RIC'),
+            fixedWidth: 150,
+          ),
+          DataColumn2(
+            label: Text('Layer 1'),
+            fixedWidth: 145,
+          ),
+          DataColumn2(
+            label: Text('Layer 2'),
+            fixedWidth: 145,
+          ),
+          DataColumn2(
+            label: Text('Layer 3'),
+            fixedWidth: 145,
+          ),
+          DataColumn2(
+            label: Text('Layer 4'),
+            fixedWidth: 145,
+          ),
+          DataColumn2(
+            label: Text(
+              'Perusahaan Transportasi',
+            ),
+            fixedWidth: 180,
+          ),
+        ],
+        rows: buildRows(),
       ),
-      headingTextStyle: const TextStyle(
-        color: Color(0xFF334155),
-        fontSize: 11,
-        height: 1.1,
-        fontWeight: FontWeight.bold,
-      ),
-      dataTextStyle: const TextStyle(
-        color: Color(0xFF0F172A),
-        fontSize: 11,
-        height: 1.15,
-      ),
-      columns: const [
-        DataColumn2(
-          label: Text('No.'),
-          fixedWidth: 45,
-        ),
-        DataColumn2(
-          label: Text('Rencana Pekerjaan'),
-          fixedWidth: 230,
-        ),
-        DataColumn2(
-          label: Text('Unit'),
-          fixedWidth: 110,
-        ),
-        DataColumn2(
-          label: Text('Type'),
-          fixedWidth: 75,
-        ),
-        DataColumn2(
-          label: Text('Driver'),
-          fixedWidth: 155,
-        ),
-        DataColumn2(
-          label: Text('SID'),
-          fixedWidth: 85,
-        ),
-        DataColumn2(
-          label: Text('Mulai'),
-          fixedWidth: 65,
-        ),
-        DataColumn2(
-          label: Text('Akhir'),
-          fixedWidth: 65,
-        ),
-        DataColumn2(
-          label: Text('Rute'),
-          fixedWidth: 175,
-        ),
-        DataColumn2(
-          label: Text('Tujuan'),
-          fixedWidth: 115,
-        ),
-        DataColumn2(
-          label: Text('Shift'),
-          fixedWidth: 90,
-        ),
-        DataColumn2(
-          label: Text('Observer'),
-          fixedWidth: 130,
-        ),
-        DataColumn2(
-          label: Text('Prosedur / JSA'),
-          fixedWidth: 220,
-        ),
-        DataColumn2(
-          label: Text('RIC'),
-          fixedWidth: 150,
-        ),
-        DataColumn2(
-          label: Text('Layer 1'),
-          fixedWidth: 145,
-        ),
-        DataColumn2(
-          label: Text('Layer 2'),
-          fixedWidth: 145,
-        ),
-        DataColumn2(
-          label: Text('Layer 3'),
-          fixedWidth: 145,
-        ),
-        DataColumn2(
-          label: Text('Layer 4'),
-          fixedWidth: 145,
-        ),
-        DataColumn2(
-          label: Text('Perusahaan Transportasi'),
-          fixedWidth: 180,
-        ),
-      ],
-      rows: buildRows(),
     );
   }
 
