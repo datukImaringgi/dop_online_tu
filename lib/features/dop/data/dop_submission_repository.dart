@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/foundation.dart';
 
 import '../domain/dop_activity_draft.dart';
 import '../domain/dop_submission_result.dart';
@@ -55,9 +56,21 @@ class DopSubmissionRepository {
       },
     );
 
-    final resultMap = extractResultMap(response);
+    final resultMap =
+    extractResultMap(response);
 
-    return DopSubmissionResult.fromMap(resultMap);
+    final result =
+    DopSubmissionResult.fromMap(
+      resultMap,
+    );
+
+    await sendDopNotification(
+      eventType: 'dop_submitted',
+      dopHeaderId: result.dopHeaderId,
+    );
+
+    return result;
+
   }
 
   Future<DopSubmissionResult> resubmitRevision({
@@ -104,9 +117,17 @@ class DopSubmissionRepository {
     final resultMap =
     extractResultMap(response);
 
-    return DopSubmissionResult.fromMap(
+    final result =
+    DopSubmissionResult.fromMap(
       resultMap,
     );
+
+    await sendDopNotification(
+      eventType: 'dop_submitted',
+      dopHeaderId: result.dopHeaderId,
+    );
+
+    return result;
   }
 
   Map<String, dynamic> extractResultMap(dynamic response) {
@@ -139,6 +160,40 @@ class DopSubmissionRepository {
     throw Exception(
       'Format hasil RPC tidak dikenali',
     );
+  }
+
+  Future<void> sendDopNotification({
+    required String eventType,
+    required String dopHeaderId,
+  }) async {
+    try {
+      final response =
+      await supabase.functions.invoke(
+        'send-dop-notification',
+        body: {
+          'eventType': eventType,
+          'dopHeaderId': dopHeaderId,
+        },
+      );
+
+      final data = response.data;
+
+      if (data is Map) {
+        final success =
+            data['success'] as bool? ?? false;
+
+        if (!success) {
+          debugPrint(
+            'Notifikasi DOP gagal: '
+                '${data['message']}',
+          );
+        }
+      }
+    } catch (error) {
+      debugPrint(
+        'Notifikasi DOP tidak terkirim: $error',
+      );
+    }
   }
 
   String formatDate(DateTime date) {

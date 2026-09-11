@@ -97,6 +97,31 @@ class OperationalMasterConfig {
     ],
   );
 
+  static const busStop =
+  OperationalMasterConfig(
+    masterType: 'bus_stop',
+    tableName: 'bus_stops',
+    title: 'Master Halte',
+    singularLabel: 'Halte',
+    icon: Icons.directions_bus_filled_outlined,
+    primaryKey: 'stop_name',
+    fields: [
+      OperationalMasterFieldConfig(
+        key: 'job_site_id',
+        label: 'Job Site',
+        type:
+        OperationalMasterFieldType.jobSite,
+      ),
+      OperationalMasterFieldConfig(
+        key: 'stop_name',
+        label: 'Nama Halte',
+        type:
+        OperationalMasterFieldType.text,
+        isRequired: true,
+      ),
+    ],
+  );
+
   static const route =
   OperationalMasterConfig(
     masterType: 'route',
@@ -120,6 +145,18 @@ class OperationalMasterConfig {
         isRequired: true,
       ),
       OperationalMasterFieldConfig(
+        key: 'transit_1',
+        label: 'Transit 1',
+        type:
+        OperationalMasterFieldType.text,
+      ),
+      OperationalMasterFieldConfig(
+        key: 'transit_2',
+        label: 'Transit 2',
+        type:
+        OperationalMasterFieldType.text,
+      ),
+      OperationalMasterFieldConfig(
         key: 'destination',
         label: 'Tujuan',
         type:
@@ -129,7 +166,8 @@ class OperationalMasterConfig {
       OperationalMasterFieldConfig(
         key: 'area_type',
         label: 'Area Tujuan',
-        type: OperationalMasterFieldType.areaType,
+        type:
+        OperationalMasterFieldType.areaType,
         isRequired: true,
       ),
     ],
@@ -221,6 +259,7 @@ class OperationalMasterConfig {
   <OperationalMasterConfig>[
     jobSite,
     driver,
+    busStop,
     route,
     jsa,
     ric,

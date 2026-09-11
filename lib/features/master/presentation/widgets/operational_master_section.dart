@@ -415,6 +415,8 @@ class OperationalMasterSection
         label: Text(
           config.masterType == 'route'
               ? 'Route'
+              : config.masterType == 'bus_stop'
+              ? 'Nama Halte'
               : config.masterType == 'jsa_procedure'
               ? 'Deskripsi Prosedur'
               : config.masterType == 'driver'

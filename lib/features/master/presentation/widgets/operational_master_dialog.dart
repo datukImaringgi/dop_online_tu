@@ -53,6 +53,14 @@ class _OperationalMasterDialogState
 
   final vendorFocusNode = FocusNode();
 
+  final routeLocationFocusNodes =
+  <String, FocusNode>{
+    'origin': FocusNode(),
+    'transit_1': FocusNode(),
+    'transit_2': FocusNode(),
+    'destination': FocusNode(),
+  };
+
   List<String> visibleVendorOptions = <String>[];
 
   String? selectedCompanyId;
@@ -120,6 +128,13 @@ class _OperationalMasterDialogState
 
   @override
   void dispose() {
+    for (
+    final focusNode
+    in routeLocationFocusNodes.values
+    ) {
+      focusNode.dispose();
+    }
+
     for (final controller in controllers.values) {
       controller.dispose();
     }
@@ -286,10 +301,21 @@ class _OperationalMasterDialogState
       value.isEmpty ? null : value;
     }
 
-    if (widget.config.masterType ==
-        'route') {
+    if (widget.config.masterType == 'route') {
       final origin =
           result['origin']
+              ?.toString()
+              .trim() ??
+              '';
+
+      final transit1 =
+          result['transit_1']
+              ?.toString()
+              .trim() ??
+              '';
+
+      final transit2 =
+          result['transit_2']
               ?.toString()
               .trim() ??
               '';
@@ -300,11 +326,21 @@ class _OperationalMasterDialogState
               .trim() ??
               '';
 
+      final locations = <String>[
+        origin,
+        if (transit1.isNotEmpty) transit1,
+        if (transit2.isNotEmpty) transit2,
+        destination,
+      ];
+
       result['origin'] = origin;
-      result['destination'] =
-          destination;
+      result['transit_1'] =
+      transit1.isEmpty ? null : transit1;
+      result['transit_2'] =
+      transit2.isEmpty ? null : transit2;
+      result['destination'] = destination;
       result['route_name'] =
-      '$origin - $destination';
+          locations.join(' - ');
     }
 
     if (widget.config.masterType ==
@@ -324,35 +360,62 @@ class _OperationalMasterDialogState
   }
 
   String? validateRouteData() {
-    if (widget.config.masterType !=
-        'route') {
+    if (widget.config.masterType != 'route') {
       return null;
     }
 
-    final originController =
-    controllers['origin'];
-
-    final destinationController =
-    controllers['destination'];
-
     final origin =
-        originController?.text.trim() ??
-            '';
-
-    final destination =
-        destinationController
+        controllers['origin']
             ?.text
             .trim() ??
             '';
 
-    if (origin.isEmpty ||
-        destination.isEmpty) {
+    final transit1 =
+        controllers['transit_1']
+            ?.text
+            .trim() ??
+            '';
+
+    final transit2 =
+        controllers['transit_2']
+            ?.text
+            .trim() ??
+            '';
+
+    final destination =
+        controllers['destination']
+            ?.text
+            .trim() ??
+            '';
+
+    if (origin.isEmpty || destination.isEmpty) {
       return 'Asal dan Tujuan wajib diisi.';
     }
 
-    if (origin.toLowerCase() ==
-        destination.toLowerCase()) {
-      return 'Asal dan Tujuan tidak boleh sama.';
+    if (transit2.isNotEmpty &&
+        transit1.isEmpty) {
+      return 'Transit 1 wajib diisi sebelum Transit 2.';
+    }
+
+    final locations = <String>[
+      origin,
+      if (transit1.isNotEmpty) transit1,
+      if (transit2.isNotEmpty) transit2,
+      destination,
+    ];
+
+    for (var index = 1;
+    index < locations.length;
+    index++) {
+      final previous =
+      locations[index - 1].toLowerCase();
+
+      final current =
+      locations[index].toLowerCase();
+
+      if (previous == current) {
+        return 'Lokasi yang berurutan tidak boleh sama.';
+      }
     }
 
     return null;
@@ -422,6 +485,18 @@ class _OperationalMasterDialogState
           widget.config.tableName,
         ),
       );
+
+      if (widget.config.masterType ==
+          'bus_stop') {
+        ref.invalidate(
+          busStopOptionsProvider(
+            BusStopQuery(
+              companyId: companyId,
+              jobSiteId: selectedJobSiteId,
+            ),
+          ),
+        );
+      }
 
       if (widget.config.masterType ==
           'driver') {
@@ -525,9 +600,11 @@ class _OperationalMasterDialogState
       activeCompaniesProvider,
     );
 
-    AsyncValue<
-        List<AssignmentJobSiteOption>>?
+    AsyncValue<List<AssignmentJobSiteOption>>?
     jobSitesAsync;
+
+    AsyncValue<List<String>>?
+    busStopsAsync;
 
     if (selectedCompanyId != null &&
         selectedCompanyId!.isNotEmpty &&
@@ -536,6 +613,19 @@ class _OperationalMasterDialogState
       jobSitesAsync = ref.watch(
         assignmentJobSitesProvider(
           selectedCompanyId!,
+        ),
+      );
+    }
+
+    if (widget.config.masterType == 'route' &&
+        selectedCompanyId != null &&
+        selectedCompanyId!.isNotEmpty) {
+      busStopsAsync = ref.watch(
+        busStopOptionsProvider(
+          BusStopQuery(
+            companyId: selectedCompanyId,
+            jobSiteId: selectedJobSiteId,
+          ),
         ),
       );
     }
@@ -581,6 +671,7 @@ class _OperationalMasterDialogState
                   buildField(
                     field,
                     jobSitesAsync,
+                    busStopsAsync,
                   ),
                   const SizedBox(height: 12),
                 ],
@@ -833,9 +924,10 @@ class _OperationalMasterDialogState
 
   Widget buildField(
       OperationalMasterFieldConfig field,
-      AsyncValue<
-          List<AssignmentJobSiteOption>>?
+      AsyncValue<List<AssignmentJobSiteOption>>?
       jobSitesAsync,
+      AsyncValue<List<String>>?
+      busStopsAsync,
       ) {
     if (field.type == OperationalMasterFieldType.jobSite) {
       return buildJobSiteField(
@@ -846,6 +938,14 @@ class _OperationalMasterDialogState
 
     if (field.type == OperationalMasterFieldType.areaType) {
       return buildAreaTypeField(field);
+    }
+
+    if (widget.config.masterType == 'route' &&
+        isRouteLocationField(field.key)) {
+      return buildRouteLocationField(
+        field,
+        busStopsAsync,
+      );
     }
 
     final controller =
@@ -885,6 +985,229 @@ class _OperationalMasterDialogState
       validator: field.isRequired
           ? validateRequired
           : null,
+    );
+  }
+
+  bool isRouteLocationField(
+      String fieldKey,
+      ) {
+    return fieldKey == 'origin' ||
+        fieldKey == 'transit_1' ||
+        fieldKey == 'transit_2' ||
+        fieldKey == 'destination';
+  }
+
+  Widget buildRouteLocationField(
+      OperationalMasterFieldConfig field,
+      AsyncValue<List<String>>?
+      busStopsAsync,
+      ) {
+    final controller =
+    controllers[field.key]!;
+
+    final focusNode =
+    routeLocationFocusNodes[field.key]!;
+
+    if (busStopsAsync == null) {
+      return buildRouteLocationTextField(
+        field: field,
+        controller: controller,
+        focusNode: focusNode,
+      );
+    }
+
+    return busStopsAsync.when(
+      loading: () {
+        return buildRouteLocationTextField(
+          field: field,
+          controller: controller,
+          focusNode: focusNode,
+          isLoading: true,
+        );
+      },
+      error: (
+          Object error,
+          StackTrace stackTrace,
+          ) {
+        return buildRouteLocationTextField(
+          field: field,
+          controller: controller,
+          focusNode: focusNode,
+        );
+      },
+      data: (List<String> stopNames) {
+        return RawAutocomplete<String>(
+          textEditingController: controller,
+          focusNode: focusNode,
+          displayStringForOption:
+              (String option) => option,
+          optionsBuilder: (
+              TextEditingValue inputValue,
+              ) {
+            return filterBusStopOptions(
+              inputValue,
+              stopNames,
+            );
+          },
+          onSelected: (String option) {
+            controller.value =
+                TextEditingValue(
+                  text: option,
+                  selection:
+                  TextSelection.collapsed(
+                    offset: option.length,
+                  ),
+                );
+          },
+          fieldViewBuilder: (
+              BuildContext context,
+              TextEditingController controller,
+              FocusNode focusNode,
+              VoidCallback onFieldSubmitted,
+              ) {
+            return buildRouteLocationTextField(
+              field: field,
+              controller: controller,
+              focusNode: focusNode,
+            );
+          },
+          optionsViewBuilder: (
+              BuildContext context,
+              AutocompleteOnSelected<String>
+              onSelected,
+              Iterable<String> options,
+              ) {
+            return buildBusStopOptionsView(
+              onSelected,
+              options,
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Iterable<String> filterBusStopOptions(
+      TextEditingValue inputValue,
+      List<String> stopNames,
+      ) {
+    final query =
+    inputValue.text.trim().toLowerCase();
+
+    if (query.isEmpty) {
+      return stopNames.take(20);
+    }
+
+    return stopNames
+        .where(
+          (String stopName) {
+        return stopName
+            .toLowerCase()
+            .contains(query);
+      },
+    )
+        .take(20);
+  }
+
+  Widget buildRouteLocationTextField({
+    required OperationalMasterFieldConfig field,
+    required TextEditingController controller,
+    required FocusNode focusNode,
+    bool isLoading = false,
+  }) {
+    return TextFormField(
+      controller: controller,
+      focusNode: focusNode,
+      enabled: !isSaving,
+      textCapitalization:
+      TextCapitalization.words,
+      decoration: inputDecoration(
+        field.label,
+        hint:
+        'Pilih Halte atau ketik lokasi baru',
+        suffixIcon: isLoading
+            ? const Padding(
+          padding: EdgeInsets.all(13),
+          child: SizedBox(
+            width: 16,
+            height: 16,
+            child:
+            CircularProgressIndicator(
+              strokeWidth: 2,
+            ),
+          ),
+        )
+            : const Icon(
+          Icons.location_on_outlined,
+          size: 18,
+        ),
+      ),
+      validator: field.isRequired
+          ? validateRequired
+          : null,
+    );
+  }
+
+  Widget buildBusStopOptionsView(
+      AutocompleteOnSelected<String> onSelected,
+      Iterable<String> options,
+      ) {
+    final optionList = options.toList();
+
+    if (optionList.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Align(
+      alignment: Alignment.topLeft,
+      child: Material(
+        elevation: 8,
+        color: Colors.white,
+        borderRadius:
+        BorderRadius.circular(8),
+        clipBehavior: Clip.antiAlias,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            minWidth: 300,
+            maxWidth: 520,
+            maxHeight: 220,
+          ),
+          child: ListView.builder(
+            padding: const EdgeInsets.symmetric(
+              vertical: 4,
+            ),
+            shrinkWrap: true,
+            itemCount: optionList.length,
+            itemBuilder: (
+                BuildContext context,
+                int index,
+                ) {
+              final stopName =
+              optionList[index];
+
+              return ListTile(
+                dense: true,
+                leading: const Icon(
+                  Icons.directions_bus_outlined,
+                  color: Color(0xFF2563EB),
+                  size: 17,
+                ),
+                title: Text(
+                  stopName,
+                  style: const TextStyle(
+                    color: Color(0xFF0F172A),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                onTap: () {
+                  onSelected(stopName);
+                },
+              );
+            },
+          ),
+        ),
+      ),
     );
   }
 

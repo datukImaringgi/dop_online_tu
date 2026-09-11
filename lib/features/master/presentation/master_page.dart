@@ -40,14 +40,18 @@ class _MasterPageState
     }
 
     if (selectedMenuIndex == 4) {
-      return OperationalMasterConfig.route;
+      return OperationalMasterConfig.busStop;
     }
 
     if (selectedMenuIndex == 5) {
-      return OperationalMasterConfig.jsa;
+      return OperationalMasterConfig.route;
     }
 
     if (selectedMenuIndex == 6) {
+      return OperationalMasterConfig.jsa;
+    }
+
+    if (selectedMenuIndex == 7) {
       return OperationalMasterConfig.ric;
     }
 
@@ -510,28 +514,31 @@ class _MasterPageState
               _buildMasterMenuButton(
                 index: 3,
                 label: 'Driver',
-                icon:
-                Icons.person_pin_outlined,
+                icon: Icons.person_pin_outlined,
               ),
               const SizedBox(width: 4),
               _buildMasterMenuButton(
                 index: 4,
+                label: 'Halte',
+                icon: Icons.directions_bus_filled_outlined,
+              ),
+              const SizedBox(width: 4),
+              _buildMasterMenuButton(
+                index: 5,
                 label: 'Rute',
                 icon: Icons.route_outlined,
               ),
               const SizedBox(width: 4),
               _buildMasterMenuButton(
-                index: 5,
+                index: 6,
                 label: 'JSA',
-                icon:
-                Icons.fact_check_outlined,
+                icon: Icons.fact_check_outlined,
               ),
               const SizedBox(width: 4),
               _buildMasterMenuButton(
-                index: 6,
+                index: 7,
                 label: 'RIC',
-                icon:
-                Icons.support_agent_outlined,
+                icon: Icons.support_agent_outlined,
               ),
             ],
           ),

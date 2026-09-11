@@ -242,6 +242,92 @@ class OperationalMasterRepository {
     );
   }
 
+  Future<List<String>> loadBusStopNames({
+    required String? companyId,
+    required String? jobSiteId,
+  }) async {
+    final normalizedCompanyId =
+    normalizeOptional(companyId);
+
+    if (normalizedCompanyId == null) {
+      return <String>[];
+    }
+
+    var query = supabase
+        .from('bus_stops')
+        .select(
+      'stop_name, job_site_id',
+    )
+        .eq(
+      'company_id',
+      normalizedCompanyId,
+    )
+        .eq(
+      'is_active',
+      true,
+    );
+
+    final response = await query.order(
+      'stop_name',
+      ascending: true,
+    );
+
+    final normalizedJobSiteId =
+    normalizeOptional(jobSiteId);
+
+    final stopNames = <String>{};
+
+    for (final rawRecord in response) {
+      final record =
+      Map<String, dynamic>.from(
+        rawRecord,
+      );
+
+      final recordJobSiteId =
+      record['job_site_id'] as String?;
+
+      final belongsToSelectedSite =
+          normalizedJobSiteId == null ||
+              recordJobSiteId == null ||
+              recordJobSiteId ==
+                  normalizedJobSiteId;
+
+      if (!belongsToSelectedSite) {
+        continue;
+      }
+
+      final rawStopName =
+      record['stop_name'];
+
+      if (rawStopName is! String) {
+        continue;
+      }
+
+      final stopName =
+      rawStopName.trim();
+
+      if (stopName.isEmpty) {
+        continue;
+      }
+
+      stopNames.add(stopName);
+    }
+
+    final result = stopNames.toList();
+
+    result.sort(
+          (String first, String second) {
+        return first
+            .toLowerCase()
+            .compareTo(
+          second.toLowerCase(),
+        );
+      },
+    );
+
+    return result;
+  }
+
   Future<OperationalMasterResult> submitChange({
     required String masterType,
     required String actionType,
@@ -284,6 +370,7 @@ class OperationalMasterRepository {
     const allowedTypes = <String>{
       'unit',
       'driver',
+      'bus_stop',
       'route',
       'job_site',
       'jsa_procedure',
@@ -320,6 +407,7 @@ class OperationalMasterRepository {
     const allowedTables = <String>{
       'units',
       'drivers',
+      'bus_stops',
       'routes',
       'job_sites',
       'jsa_procedures',
@@ -415,6 +503,56 @@ class DriverVendorQuery {
   int get hashCode {
     return companyId.hashCode;
   }
+}
+
+class BusStopQuery {
+  final String? companyId;
+  final String? jobSiteId;
+
+  const BusStopQuery({
+    required this.companyId,
+    required this.jobSiteId,
+  });
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) {
+      return true;
+    }
+
+    return other is BusStopQuery &&
+        other.companyId == companyId &&
+        other.jobSiteId == jobSiteId;
+  }
+
+  @override
+  int get hashCode {
+    return Object.hash(
+      companyId,
+      jobSiteId,
+    );
+  }
+}
+
+final busStopOptionsProvider =
+FutureProvider.family<
+    List<String>,
+    BusStopQuery>(
+  loadBusStopOptions,
+);
+
+Future<List<String>> loadBusStopOptions(
+    Ref ref,
+    BusStopQuery query,
+    ) async {
+  final repository = ref.watch(
+    operationalMasterRepositoryProvider,
+  );
+
+  return repository.loadBusStopNames(
+    companyId: query.companyId,
+    jobSiteId: query.jobSiteId,
+  );
 }
 
 final driverVendorOptionsProvider =

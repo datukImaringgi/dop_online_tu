@@ -406,6 +406,7 @@ class MasterChangeRequestRepository {
     const operationalMasterTypes = <String>{
       'unit',
       'driver',
+      'bus_stop',
       'route',
       'job_site',
       'jsa_procedure',
