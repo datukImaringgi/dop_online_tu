@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter/foundation.dart';
 
 import '../../../shared/providers/supabase_provider.dart';
 
@@ -9,6 +10,52 @@ class DopApprovalActionRepository {
   const DopApprovalActionRepository({
     required this.supabase,
   });
+
+  Future<void> sendDopNotification({
+    required String eventType,
+    required String dopHeaderId,
+    String? reviewNote,
+  }) async {
+    try {
+      final body = <String, dynamic>{
+        'eventType': eventType,
+        'dopHeaderId': dopHeaderId,
+      };
+
+      final normalizedNote =
+          reviewNote?.trim() ?? '';
+
+      if (normalizedNote.isNotEmpty) {
+        body['reviewNote'] = normalizedNote;
+      }
+
+      final response =
+      await supabase.functions.invoke(
+        'send-dop-notification',
+        body: body,
+      );
+
+      final responseData = response.data;
+
+      if (responseData is Map) {
+        final success =
+            responseData['success'] as bool? ??
+                false;
+
+        if (!success) {
+          debugPrint(
+            'Notifikasi DOP gagal: '
+                '${responseData['message']}',
+          );
+        }
+      }
+    } catch (error) {
+      debugPrint(
+        'Notifikasi DOP tidak terkirim: '
+            '$error',
+      );
+    }
+  }
 
   Future<void> approveLayer3({
     required String dopHeaderId,
@@ -37,6 +84,12 @@ class DopApprovalActionRepository {
             ? null
             : cleanedNote,
       },
+    );
+
+    await sendDopNotification(
+      eventType: 'layer_3_approved',
+      dopHeaderId: cleanedDopHeaderId,
+      reviewNote: cleanedNote,
     );
   }
 
@@ -67,6 +120,12 @@ class DopApprovalActionRepository {
             ? null
             : cleanedNote,
       },
+    );
+
+    await sendDopNotification(
+      eventType: 'layer_4_approved',
+      dopHeaderId: cleanedDopHeaderId,
+      reviewNote: cleanedNote,
     );
   }
 
@@ -101,6 +160,12 @@ class DopApprovalActionRepository {
         cleanedNote,
       },
     );
+
+    await sendDopNotification(
+      eventType: 'revision_required',
+      dopHeaderId: cleanedDopHeaderId,
+      reviewNote: cleanedNote,
+    );
   }
 
   Future<void> rejectDop({
@@ -132,6 +197,12 @@ class DopApprovalActionRepository {
         cleanedDopHeaderId,
         'p_note': cleanedNote,
       },
+    );
+
+    await sendDopNotification(
+      eventType: 'rejected',
+      dopHeaderId: cleanedDopHeaderId,
+      reviewNote: cleanedNote,
     );
   }
 }
