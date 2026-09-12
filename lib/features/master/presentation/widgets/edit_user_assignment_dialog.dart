@@ -247,6 +247,8 @@ class _EditUserAssignmentDialogState
     );
 
     return AlertDialog(
+      backgroundColor: const Color(0xFFF8FAFC),
+      surfaceTintColor: const Color(0xFFF8FAFC),
       titlePadding: const EdgeInsets.fromLTRB(
         20,
         18,
@@ -598,12 +600,43 @@ class _EditUserAssignmentDialogState
       labelText: label,
       hintText: hint,
       isDense: true,
+      filled: true,
+      fillColor: Colors.white,
       contentPadding: const EdgeInsets.symmetric(
         horizontal: 12,
         vertical: 12,
       ),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(
+          color: Color(0xFFCBD5E1),
+        ),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(
+          color: Color(0xFFCBD5E1),
+        ),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(
+          color: Color(0xFF2563EB),
+          width: 1.4,
+        ),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(
+          color: Color(0xFFDC2626),
+        ),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(
+          color: Color(0xFFDC2626),
+          width: 1.4,
+        ),
       ),
     );
   }

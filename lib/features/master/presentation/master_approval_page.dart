@@ -20,7 +20,7 @@ class MasterApprovalPage
 
 class _MasterApprovalPageState
     extends ConsumerState<MasterApprovalPage> {
-  String selectedStatus = 'pending';
+  String selectedStatus = 'all';
   String? selectedCompanyId;
   String selectedMasterType = 'all';
 
