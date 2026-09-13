@@ -34,6 +34,7 @@ class AccountRepository {
         .from('profiles')
         .update({
       'notification_email': normalizedEmail,
+      'is_email_notification_enabled': true,
     })
         .eq('id', user.id);
   }
