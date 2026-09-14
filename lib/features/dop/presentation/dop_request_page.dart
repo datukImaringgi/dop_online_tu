@@ -13,18 +13,31 @@ import '../domain/dop_revision_data.dart';
 import 'widgets/dop_revision_form_loader.dart';
 import '../data/dop_revision_list_provider.dart';
 import '../../approval/data/dop_approval_provider.dart';
+import '../data/dop_revision_repository.dart';
 
-class DopRequestPage extends ConsumerStatefulWidget {
+class DopRequestPage
+    extends ConsumerStatefulWidget {
   final String? revisionDopHeaderId;
+  final String? draftDopHeaderId;
 
   const DopRequestPage({
     super.key,
     this.revisionDopHeaderId,
+    this.draftDopHeaderId,
   });
 
   bool get isRevisionMode {
     return revisionDopHeaderId != null &&
-        revisionDopHeaderId!.trim().isNotEmpty;
+        revisionDopHeaderId!
+            .trim()
+            .isNotEmpty;
+  }
+
+  bool get isDraftMode {
+    return draftDopHeaderId != null &&
+        draftDopHeaderId!
+            .trim()
+            .isNotEmpty;
   }
 
   @override
@@ -50,6 +63,15 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
   final List<DopActivityDraft> activityDrafts = <DopActivityDraft>[];
 
   bool hasAppliedRevisionData = false;
+  bool hasAppliedDraftData = false;
+
+  bool get isDraftMode {
+    return widget.isDraftMode;
+  }
+
+  String? get draftDopHeaderId {
+    return widget.draftDopHeaderId;
+  }
 
   String activeRevisionDopNumber = '';
 
@@ -251,6 +273,8 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
   }
 
   bool isSubmitting = false;
+  bool isSavingDraft = false;
+  String? activeDraftHeaderId;
 
   bool get isRevisionMode {
     return widget.isRevisionMode;
@@ -367,6 +391,16 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
     return normalizedSelectedDate;
   }
 
+  @override
+  void initState() {
+    super.initState();
+
+    if (widget.isDraftMode) {
+      activeDraftHeaderId =
+          widget.draftDopHeaderId;
+    }
+  }
+
   Future<void> deleteActivity(DopActivityDraft draft) async {
     final shouldDelete = await showDialog<bool>(
       context: context,
@@ -415,8 +449,100 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
     showMessage('Aktivitas berhasil dihapus');
   }
 
+  Future<void> saveCurrentDraft() async {
+    if (isSavingDraft || isSubmitting) {
+      return;
+    }
+
+    if (isRevisionMode) {
+      showMessage(
+        'Fitur Simpan Draft tidak tersedia '
+            'pada proses revisi.',
+      );
+      return;
+    }
+
+    if (selectedJobSiteId == null ||
+        selectedJobSiteId!.trim().isEmpty) {
+      showMessage(
+        'Job Site wajib dipilih sebelum '
+            'menyimpan draft.',
+      );
+      return;
+    }
+
+    if (!isSelectedDopDateValid()) {
+      showMessage(
+        'Tanggal DOP hanya dapat dibuat '
+            'untuk hari ini atau besok.',
+      );
+      return;
+    }
+
+    if (activityDrafts.isEmpty) {
+      showMessage(
+        'Minimal satu aktivitas kendaraan '
+            'diperlukan untuk menyimpan draft.',
+      );
+      return;
+    }
+
+    if (hasUnfinishedEditing()) {
+      showMessage(
+        'Selesaikan Update Aktivitas sebelum '
+            'menyimpan draft.',
+      );
+      return;
+    }
+
+    setState(() {
+      isSavingDraft = true;
+    });
+
+    try {
+      final repository = ref.read(
+        dopSubmissionRepositoryProvider,
+      );
+
+      final draftHeaderId =
+      await repository.saveDraft(
+        dopHeaderId: activeDraftHeaderId,
+        jobSiteId: selectedJobSiteId!,
+        dopDate: selectedDate,
+        dayName: getDayName(selectedDate),
+        activities: activityDrafts,
+      );
+
+      activeDraftHeaderId = draftHeaderId;
+
+      ref.invalidate(dopListProvider);
+
+      if (!mounted) {
+        return;
+      }
+
+      showMessage(
+        'Draft DOP berhasil disimpan.',
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      showMessage(
+        extractSubmissionError(error),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          isSavingDraft = false;
+        });
+      }
+    }
+  }
+
   Future<void> submitDop() async {
-    if (isSubmitting) {
+    if (isSubmitting || isSavingDraft) {
       return;
     }
 
@@ -501,6 +627,14 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
   }
 
   Future<void> handleMainSubmit() async {
+    if (isDraftMode) {
+      showMessage(
+        'Submit Draft sedang disiapkan. '
+            'Gunakan Perbarui Draft terlebih dahulu.',
+      );
+      return;
+    }
+
     if (!isRevisionMode) {
       await submitDop();
       return;
@@ -510,7 +644,7 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
   }
 
   Future<void> submitRevision() async {
-    if (isSubmitting) {
+    if (isSubmitting || isSavingDraft) {
       return;
     }
 
@@ -803,6 +937,35 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
 
       editingDraftId = null;
       hasAppliedRevisionData = true;
+    });
+  }
+
+  void applyDraftData(
+      DopRevisionData draftData,
+      ) {
+    if (hasAppliedDraftData) {
+      return;
+    }
+
+    setState(() {
+      activeDraftHeaderId =
+          draftData.dopHeaderId;
+
+      selectedJobSiteId =
+          draftData.jobSiteId;
+
+      selectedDate = DateTime(
+        draftData.dopDate.year,
+        draftData.dopDate.month,
+        draftData.dopDate.day,
+      );
+
+      activityDrafts
+        ..clear()
+        ..addAll(draftData.activities);
+
+      editingDraftId = null;
+      hasAppliedDraftData = true;
     });
   }
 
@@ -1273,6 +1436,88 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
     );
   }
 
+  Widget buildDraftLoader() {
+    final headerId = draftDopHeaderId;
+
+    if (headerId == null) {
+      return const SizedBox.shrink();
+    }
+
+    final draftAsync = ref.watch(
+      dopDraftDataProvider(headerId),
+    );
+
+    return draftAsync.when(
+      loading: () {
+        return const Padding(
+          padding: EdgeInsets.all(16),
+          child: Center(
+            child: CircularProgressIndicator(),
+          ),
+        );
+      },
+      error: (error, stackTrace) {
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFEF2F2),
+            borderRadius:
+            BorderRadius.circular(10),
+            border: Border.all(
+              color: const Color(0xFFFECACA),
+            ),
+          ),
+          child: Text(
+            extractSubmissionError(error),
+            style: const TextStyle(
+              color: Color(0xFFB91C1C),
+            ),
+          ),
+        );
+      },
+      data: (draftData) {
+        if (!hasAppliedDraftData) {
+          WidgetsBinding.instance
+              .addPostFrameCallback((_) {
+            if (mounted) {
+              applyDraftData(draftData);
+            }
+          });
+        }
+
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFFBEB),
+            borderRadius:
+            BorderRadius.circular(10),
+            border: Border.all(
+              color: const Color(0xFFFCD34D),
+            ),
+          ),
+          child: const Row(
+            children: [
+              Icon(
+                Icons.edit_note_outlined,
+                color: Color(0xFFD97706),
+              ),
+              SizedBox(width: 9),
+              Text(
+                'Anda sedang melanjutkan Draft DOP.',
+                style: TextStyle(
+                  color: Color(0xFF92400E),
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final jobSitesAsync = ref.watch(jobSitesProvider);
@@ -1337,6 +1582,8 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
                         Text(
                           isRevisionMode
                               ? 'Revisi DOP'
+                              : isDraftMode
+                              ? 'Lanjutkan Draft DOP'
                               : 'Request Form DOP',
                           style: const TextStyle(
                             fontSize: 24,
@@ -1366,7 +1613,8 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
                   ),
 
                   OutlinedButton.icon(
-                    onPressed: isSubmitting
+                    onPressed:
+                    isSubmitting || isSavingDraft
                         ? null
                         : () {
                       if (isRevisionMode) {
@@ -1403,10 +1651,66 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
                   ),
 
                   const SizedBox(width: 8),
-
+                  if (!isRevisionMode) ...[
+                    OutlinedButton.icon(
+                      onPressed:
+                      isSubmitting ||
+                          isSavingDraft ||
+                          activityDrafts.isEmpty
+                          ? null
+                          : saveCurrentDraft,
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size(0, 36),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 13,
+                          vertical: 7,
+                        ),
+                        foregroundColor:
+                        const Color(0xFF315D8A),
+                        backgroundColor: Colors.white,
+                        disabledForegroundColor:
+                        const Color(0xFF94A3B8),
+                        disabledBackgroundColor:
+                        const Color(0xFFF1F5F9),
+                        side: const BorderSide(
+                          color: Color(0xFF94A3B8),
+                        ),
+                        textStyle: const TextStyle(
+                          fontSize: 11.5,
+                          height: 1,
+                          fontWeight: FontWeight.w700,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius:
+                          BorderRadius.circular(8),
+                        ),
+                      ),
+                      icon: isSavingDraft
+                          ? const SizedBox(
+                        width: 15,
+                        height: 15,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                        ),
+                      )
+                          : const Icon(
+                        Icons.save_outlined,
+                        size: 16,
+                      ),
+                      label: Text(
+                        isSavingDraft
+                            ? 'Menyimpan...'
+                            : activeDraftHeaderId == null
+                            ? 'Simpan Draft'
+                            : 'Perbarui Draft',
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
                   ElevatedButton.icon(
                     onPressed:
                     isSubmitting ||
+                        isSavingDraft ||
                         activityDrafts.isEmpty ||
                         (isRevisionMode &&
                             !hasAppliedRevisionData)
@@ -1465,6 +1769,10 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
                 child: SingleChildScrollView(
                   child: Column(
                     children: [
+                      if (isDraftMode) ...[
+                        buildDraftLoader(),
+                        const SizedBox(height: 12),
+                      ],
                       if (isRevisionMode &&
                           revisionDopHeaderId != null) ...[
                         DopRevisionFormLoader(
@@ -1529,7 +1837,8 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
                         jsaProcedures: jsaProcedures,
                         controlRooms: controlRooms,
                         employees: employees,
-                        isSubmitting: isSubmitting,
+                        isSubmitting:
+                        isSubmitting || isSavingDraft,
                         isEditing: editingDraftId != null,
                         onShiftChanged: handleShiftChanged,
                         onUnitChanged: handleUnitChanged,

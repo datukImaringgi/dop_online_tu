@@ -73,6 +73,76 @@ class DopSubmissionRepository {
 
   }
 
+  Future<String> saveDraft({
+    String? dopHeaderId,
+    required String jobSiteId,
+    required DateTime dopDate,
+    required String dayName,
+    required List<DopActivityDraft> activities,
+  }) async {
+    final cleanedJobSiteId =
+    jobSiteId.trim();
+
+    if (cleanedJobSiteId.isEmpty) {
+      throw Exception(
+        'Job Site wajib dipilih.',
+      );
+    }
+
+    if (activities.isEmpty) {
+      throw Exception(
+        'Minimal satu aktivitas kendaraan '
+            'diperlukan untuk menyimpan draft.',
+      );
+    }
+
+    final activityPayloads =
+    <Map<String, dynamic>>[];
+
+    for (final activity in activities) {
+      activityPayloads.add(
+        activity.toSubmissionPayload(),
+      );
+    }
+
+    final cleanedDopHeaderId =
+    dopHeaderId?.trim();
+
+    final response = await supabase.rpc(
+      'save_dop_draft',
+      params: {
+        'p_dop_header_id':
+        cleanedDopHeaderId == null ||
+            cleanedDopHeaderId.isEmpty
+            ? null
+            : cleanedDopHeaderId,
+        'p_job_site_id':
+        cleanedJobSiteId,
+        'p_dop_date':
+        formatDate(dopDate),
+        'p_day_name':
+        dayName.trim(),
+        'p_activities':
+        activityPayloads,
+      },
+    );
+
+    final resultMap =
+    extractResultMap(response);
+
+    final draftHeaderId =
+    resultMap['dop_header_id'];
+
+    if (draftHeaderId is! String ||
+        draftHeaderId.trim().isEmpty) {
+      throw Exception(
+        'RPC tidak mengembalikan ID Draft DOP.',
+      );
+    }
+
+    return draftHeaderId.trim();
+  }
+
   Future<DopSubmissionResult> resubmitRevision({
     required String dopHeaderId,
     required String jobSiteId,

@@ -37,5 +37,42 @@ final dopListProvider = FutureProvider<List<DopListItemModel>>((ref) async {
     );
   }
 
+  items.sort((
+      DopListItemModel first,
+      DopListItemModel second,
+      ) {
+    final firstIsDraft =
+        first.status == 'draft';
+
+    final secondIsDraft =
+        second.status == 'draft';
+
+    if (firstIsDraft != secondIsDraft) {
+      return firstIsDraft ? -1 : 1;
+    }
+
+    final dateComparison =
+    second.dopDate.compareTo(
+      first.dopDate,
+    );
+
+    if (dateComparison != 0) {
+      return dateComparison;
+    }
+
+    final headerComparison =
+    first.dopHeaderId.compareTo(
+      second.dopHeaderId,
+    );
+
+    if (headerComparison != 0) {
+      return headerComparison;
+    }
+
+    return first.startTime.compareTo(
+      second.startTime,
+    );
+  });
+
   return items;
 });

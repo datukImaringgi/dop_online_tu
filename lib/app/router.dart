@@ -50,12 +50,31 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/dop-request',
             builder: (context, state) {
-              final revisionDopHeaderId =
-              state.extra as String?;
+              final extra = state.extra;
+
+              String? revisionDopHeaderId;
+              String? draftDopHeaderId;
+
+              if (extra is String) {
+                revisionDopHeaderId = extra;
+              }
+
+              if (extra is Map) {
+                final draftId =
+                extra['draftDopHeaderId'];
+
+                if (draftId is String &&
+                    draftId.trim().isNotEmpty) {
+                  draftDopHeaderId =
+                      draftId.trim();
+                }
+              }
 
               return DopRequestPage(
                 revisionDopHeaderId:
                 revisionDopHeaderId,
+                draftDopHeaderId:
+                draftDopHeaderId,
               );
             },
           ),

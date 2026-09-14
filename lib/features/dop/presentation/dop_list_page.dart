@@ -376,7 +376,20 @@ class _DopListPageState extends ConsumerState<DopListPage> {
                           color: Color(0xFF64748B),
                         ),
                       ),
-                    ): _DopDataTable(items: filteredItems),
+                    ): _DopDataTable(
+                      items: filteredItems,
+                      onContinueDraft: (
+                          DopListItemModel item,
+                          ) {
+                        context.go(
+                          '/dop-request',
+                          extra: {
+                            'draftDopHeaderId':
+                            item.dopHeaderId,
+                          },
+                        );
+                      },
+                    ),
                   ),
                 ),
               ],
@@ -388,11 +401,15 @@ class _DopListPageState extends ConsumerState<DopListPage> {
   }
 }
 
-class _DopDataTable extends StatefulWidget {
+class _DopDataTable
+    extends StatefulWidget {
   final List<DopListItemModel> items;
+  final ValueChanged<DopListItemModel>
+  onContinueDraft;
 
   const _DopDataTable({
     required this.items,
+    required this.onContinueDraft,
   });
 
   @override
@@ -463,6 +480,10 @@ class _DopDataTableState extends State<_DopDataTable> {
       ),
 
       columns: const [
+        DataColumn2(
+          label: Text('Action'),
+          fixedWidth: 48,
+        ),
         DataColumn2(
           label: Text('Status'),
           fixedWidth: 80,
@@ -597,7 +618,36 @@ class _DopDataTableState extends State<_DopDataTable> {
         DataRow(
           cells: [
             DataCell(
-              _StatusBadge(status: item.status),
+              item.status == 'draft'
+                  ? Tooltip(
+                message: 'Lanjutkan Draft',
+                child: IconButton(
+                  onPressed: () {
+                    widget.onContinueDraft(
+                      item,
+                    );
+                  },
+                  visualDensity:
+                  VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                  constraints:
+                  const BoxConstraints(
+                    minWidth: 30,
+                    minHeight: 30,
+                  ),
+                  icon: const Icon(
+                    Icons.edit_outlined,
+                    size: 17,
+                    color: Color(0xFF2563EB),
+                  ),
+                ),
+              )
+                  : const SizedBox.shrink(),
+            ),
+            DataCell(
+              _StatusBadge(
+                status: item.status,
+              ),
             ),
             DataCell(_singleLineText(item.dopNumber)),
             DataCell(_singleLineText(item.dayName)),
@@ -721,6 +771,10 @@ class _StatusBadge extends StatelessWidget {
   }
 
   Color _getColor(String status) {
+    if (status == 'draft') {
+      return const Color(0xFFD97706);
+    }
+
     if (status == 'approved') {
       return const Color(0xFF10B981);
     }

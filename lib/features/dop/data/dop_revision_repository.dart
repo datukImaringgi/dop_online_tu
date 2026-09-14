@@ -224,6 +224,188 @@ class DopRevisionRepository {
     );
   }
 
+  Future<DopRevisionData> loadDraft({
+    required String dopHeaderId,
+  }) async {
+    final cleanedHeaderId =
+    dopHeaderId.trim();
+
+    if (cleanedHeaderId.isEmpty) {
+      throw Exception(
+        'Draft DOP tidak valid.',
+      );
+    }
+
+    final currentUser =
+        supabase.auth.currentUser;
+
+    if (currentUser == null) {
+      throw Exception(
+        'User belum login.',
+      );
+    }
+
+    final headerResponse = await supabase
+        .from('dop_headers')
+        .select(
+      'id, '
+          'dop_number, '
+          'company_id, '
+          'job_site_id, '
+          'dop_date, '
+          'day_name, '
+          'status, '
+          'created_by, '
+          'revision_number',
+    )
+        .eq('id', cleanedHeaderId)
+        .maybeSingle();
+
+    if (headerResponse == null) {
+      throw Exception(
+        'Draft DOP tidak ditemukan.',
+      );
+    }
+
+    final header =
+    Map<String, dynamic>.from(
+      headerResponse,
+    );
+
+    if (header['status'] != 'draft') {
+      throw Exception(
+        'DOP ini bukan berstatus Draft.',
+      );
+    }
+
+    if (header['created_by'] !=
+        currentUser.id) {
+      throw Exception(
+        'Hanya pembuat Draft DOP yang '
+            'dapat melanjutkannya.',
+      );
+    }
+
+    final companyId =
+    header['company_id'] as String?;
+
+    final jobSiteId =
+    header['job_site_id'] as String?;
+
+    if (companyId == null ||
+        companyId.isEmpty ||
+        jobSiteId == null ||
+        jobSiteId.isEmpty) {
+      throw Exception(
+        'Perusahaan atau Job Site Draft '
+            'tidak valid.',
+      );
+    }
+
+    final detailsResponse = await supabase
+        .from('dop_details')
+        .select(
+      'id, '
+          'work_plan, '
+          'area_type, '
+          'shift, '
+          'unit_id, '
+          'unit_type, '
+          'unit_number, '
+          'transport_company, '
+          'driver_id, '
+          'driver_name, '
+          'sid, '
+          'sid_expired_date, '
+          'simper_expired_date, '
+          'start_time, '
+          'end_time, '
+          'route_id, '
+          'route, '
+          'observer, '
+          'jsa_id, '
+          'jsa_procedure, '
+          'control_room_id, '
+          'control_room, '
+          'layer_1_user_id, '
+          'layer_2_user_id, '
+          'layer_3_user_id, '
+          'layer_4_user_id, '
+          'layer_1, '
+          'layer_2, '
+          'layer_3, '
+          'layer_4, '
+          'notes',
+    )
+        .eq(
+      'dop_header_id',
+      cleanedHeaderId,
+    )
+        .eq('is_active', true)
+        .order(
+      'created_at',
+      ascending: true,
+    );
+
+    final rawDetails =
+    detailsResponse as List<dynamic>;
+
+    if (rawDetails.isEmpty) {
+      throw Exception(
+        'Aktivitas Draft DOP tidak ditemukan.',
+      );
+    }
+
+    final activities =
+    <DopActivityDraft>[];
+
+    for (final rawDetail in rawDetails) {
+      final detailMap =
+      Map<String, dynamic>.from(
+        rawDetail as Map,
+      );
+
+      final detailRecord =
+      DopRevisionDetailRecord.fromMap(
+        detailMap,
+      );
+
+      activities.add(
+        detailRecord.toDraft(),
+      );
+    }
+
+    final dopDateText =
+    header['dop_date']?.toString();
+
+    final dopDate =
+    dopDateText == null
+        ? null
+        : DateTime.tryParse(
+      dopDateText,
+    );
+
+    if (dopDate == null) {
+      throw Exception(
+        'Tanggal Draft DOP tidak valid.',
+      );
+    }
+
+    return DopRevisionData(
+      dopHeaderId: cleanedHeaderId,
+      dopNumber: 'DRAFT',
+      companyId: companyId,
+      jobSiteId: jobSiteId,
+      dopDate: dopDate,
+      dayName:
+      header['day_name'] as String? ??
+          '-',
+      revisionNumber: 0,
+      revisionNote: '',
+      activities: activities,
+    );
+  }
+
   Future<String> loadLatestRevisionNote({
     required String dopHeaderId,
   }) async {
@@ -322,4 +504,25 @@ FutureProvider.family<
     DopRevisionData,
     String>(
   loadDopRevisionData,
+);
+
+Future<DopRevisionData>
+loadDopDraftData(
+    Ref ref,
+    String dopHeaderId,
+    ) async {
+  final repository = ref.watch(
+    dopRevisionRepositoryProvider,
+  );
+
+  return repository.loadDraft(
+    dopHeaderId: dopHeaderId,
+  );
+}
+
+final dopDraftDataProvider =
+FutureProvider.family<
+    DopRevisionData,
+    String>(
+  loadDopDraftData,
 );
