@@ -19,11 +19,13 @@ class DopRequestPage
     extends ConsumerStatefulWidget {
   final String? revisionDopHeaderId;
   final String? draftDopHeaderId;
+  final String? referenceDopHeaderId;
 
   const DopRequestPage({
     super.key,
     this.revisionDopHeaderId,
     this.draftDopHeaderId,
+    this.referenceDopHeaderId,
   });
 
   bool get isRevisionMode {
@@ -36,6 +38,13 @@ class DopRequestPage
   bool get isDraftMode {
     return draftDopHeaderId != null &&
         draftDopHeaderId!
+            .trim()
+            .isNotEmpty;
+  }
+
+  bool get isReferenceMode {
+    return referenceDopHeaderId != null &&
+        referenceDopHeaderId!
             .trim()
             .isNotEmpty;
   }
@@ -64,6 +73,8 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
 
   bool hasAppliedRevisionData = false;
   bool hasAppliedDraftData = false;
+  bool hasAppliedReferenceData = false;
+  String referenceDopNumber = '';
 
   bool get isDraftMode {
     return widget.isDraftMode;
@@ -76,6 +87,14 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
   String activeRevisionDopNumber = '';
 
   int activeRevisionNumber = 0;
+
+  bool get isReferenceMode {
+    return widget.isReferenceMode;
+  }
+
+  String? get referenceDopHeaderId {
+    return widget.referenceDopHeaderId;
+  }
 
   DateTime selectedDate = DateTime.now().add(
     const Duration(days: 1),
@@ -969,6 +988,37 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
     });
   }
 
+  void applyReferenceData(
+      DopRevisionData referenceData,
+      ) {
+    if (hasAppliedReferenceData) {
+      return;
+    }
+
+    setState(() {
+      activeDraftHeaderId = null;
+
+      selectedJobSiteId =
+          referenceData.jobSiteId;
+
+      selectedDate = DateTime(
+        referenceData.dopDate.year,
+        referenceData.dopDate.month,
+        referenceData.dopDate.day,
+      );
+
+      referenceDopNumber =
+          referenceData.dopNumber;
+
+      activityDrafts
+        ..clear()
+        ..addAll(referenceData.activities);
+
+      editingDraftId = null;
+      hasAppliedReferenceData = true;
+    });
+  }
+
   void resetActivityFields() {
     workPlanController.clear();
     observerController.clear();
@@ -1518,6 +1568,93 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
     );
   }
 
+  Widget buildReferenceLoader() {
+    final headerId = referenceDopHeaderId;
+
+    if (headerId == null) {
+      return const SizedBox.shrink();
+    }
+
+    final referenceAsync = ref.watch(
+      dopReferenceDataProvider(headerId),
+    );
+
+    return referenceAsync.when(
+      loading: () {
+        return const Padding(
+          padding: EdgeInsets.all(16),
+          child: Center(
+            child: CircularProgressIndicator(),
+          ),
+        );
+      },
+      error: (error, stackTrace) {
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFEF2F2),
+            borderRadius:
+            BorderRadius.circular(10),
+            border: Border.all(
+              color: const Color(0xFFFECACA),
+            ),
+          ),
+          child: Text(
+            extractSubmissionError(error),
+            style: const TextStyle(
+              color: Color(0xFFB91C1C),
+            ),
+          ),
+        );
+      },
+      data: (referenceData) {
+        if (!hasAppliedReferenceData) {
+          WidgetsBinding.instance
+              .addPostFrameCallback((_) {
+            if (mounted) {
+              applyReferenceData(
+                referenceData,
+              );
+            }
+          });
+        }
+
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFEFF6FF),
+            borderRadius:
+            BorderRadius.circular(10),
+            border: Border.all(
+              color: const Color(0xFFBFDBFE),
+            ),
+          ),
+          child: Row(
+            children: [
+              const Icon(
+                Icons.copy_all_outlined,
+                color: Color(0xFF2563EB),
+              ),
+              const SizedBox(width: 9),
+              Expanded(
+                child: Text(
+                  'DOP baru dibuat dari referensi '
+                      '${referenceData.dopNumber}.',
+                  style: const TextStyle(
+                    color: Color(0xFF1E40AF),
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final jobSitesAsync = ref.watch(jobSitesProvider);
@@ -1584,6 +1721,8 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
                               ? 'Revisi DOP'
                               : isDraftMode
                               ? 'Lanjutkan Draft DOP'
+                              : isReferenceMode
+                              ? 'Buat DOP dari Referensi'
                               : 'Request Form DOP',
                           style: const TextStyle(
                             fontSize: 24,
@@ -1600,8 +1739,11 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
                               ? 'Menyiapkan data revisi DOP...'
                               : '$activeRevisionDopNumber • '
                               'Revisi ${activeRevisionNumber + 1}'
-                              : 'Input Daily Operation Plan '
-                              'Transportasi',
+                              : isReferenceMode
+                              ? referenceDopNumber.isEmpty
+                              ? 'Menyiapkan data referensi DOP...'
+                              : 'Referensi: $referenceDopNumber'
+                              : 'Input Daily Operation Plan Transportasi',
                           style: const TextStyle(
                             color: Color(0xFF64748B),
                             fontSize: 12.5,
@@ -1769,6 +1911,10 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
                 child: SingleChildScrollView(
                   child: Column(
                     children: [
+                      if (isReferenceMode) ...[
+                        buildReferenceLoader(),
+                        const SizedBox(height: 12),
+                      ],
                       if (isDraftMode) ...[
                         buildDraftLoader(),
                         const SizedBox(height: 12),

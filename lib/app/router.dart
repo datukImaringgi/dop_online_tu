@@ -59,14 +59,25 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 revisionDopHeaderId = extra;
               }
 
+              String? referenceDopHeaderId;
+
               if (extra is Map) {
                 final draftId =
                 extra['draftDopHeaderId'];
+
+                final referenceId =
+                extra['referenceDopHeaderId'];
 
                 if (draftId is String &&
                     draftId.trim().isNotEmpty) {
                   draftDopHeaderId =
                       draftId.trim();
+                }
+
+                if (referenceId is String &&
+                    referenceId.trim().isNotEmpty) {
+                  referenceDopHeaderId =
+                      referenceId.trim();
                 }
               }
 
@@ -75,6 +86,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 revisionDopHeaderId,
                 draftDopHeaderId:
                 draftDopHeaderId,
+                referenceDopHeaderId:
+                referenceDopHeaderId,
               );
             },
           ),

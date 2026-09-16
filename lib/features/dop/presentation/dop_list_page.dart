@@ -642,7 +642,34 @@ class _DopDataTableState extends State<_DopDataTable> {
                   ),
                 ),
               )
-                  : const SizedBox.shrink(),
+                  : Tooltip(
+                message:
+                'Buat DOP Baru dari Referensi',
+                child: IconButton(
+                  onPressed: () {
+                    context.go(
+                      '/dop-request',
+                      extra: {
+                        'referenceDopHeaderId':
+                        item.dopHeaderId,
+                      },
+                    );
+                  },
+                  visualDensity:
+                  VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                  constraints:
+                  const BoxConstraints(
+                    minWidth: 30,
+                    minHeight: 30,
+                  ),
+                  icon: const Icon(
+                    Icons.copy_all_outlined,
+                    size: 17,
+                    color: Color(0xFF7C3AED),
+                  ),
+                ),
+              ),
             ),
             DataCell(
               _StatusBadge(
