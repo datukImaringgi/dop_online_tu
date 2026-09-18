@@ -143,6 +143,42 @@ class DopSubmissionRepository {
     return draftHeaderId.trim();
   }
 
+  Future<DopSubmissionResult> submitDraft({
+    required String dopHeaderId,
+  }) async {
+    final cleanedHeaderId =
+    dopHeaderId.trim();
+
+    if (cleanedHeaderId.isEmpty) {
+      throw Exception(
+        'Draft DOP tidak valid.',
+      );
+    }
+
+    final response = await supabase.rpc(
+      'submit_dop_draft',
+      params: {
+        'p_dop_header_id':
+        cleanedHeaderId,
+      },
+    );
+
+    final resultMap =
+    extractResultMap(response);
+
+    final result =
+    DopSubmissionResult.fromMap(
+      resultMap,
+    );
+
+    await sendDopNotification(
+      eventType: 'dop_submitted',
+      dopHeaderId: result.dopHeaderId,
+    );
+
+    return result;
+  }
+
   Future<DopSubmissionResult> resubmitRevision({
     required String dopHeaderId,
     required String jobSiteId,

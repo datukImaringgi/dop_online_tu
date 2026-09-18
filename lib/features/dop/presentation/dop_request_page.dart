@@ -645,21 +645,140 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
     }
   }
 
-  Future<void> handleMainSubmit() async {
-    if (isDraftMode) {
+  Future<void> submitDraftDop() async {
+    if (isSubmitting || isSavingDraft) {
+      return;
+    }
+
+    final draftHeaderId =
+    activeDraftHeaderId?.trim();
+
+    if (draftHeaderId == null ||
+        draftHeaderId.isEmpty) {
       showMessage(
-        'Submit Draft sedang disiapkan. '
-            'Gunakan Perbarui Draft terlebih dahulu.',
+        'ID Draft DOP tidak ditemukan.',
       );
       return;
     }
 
-    if (!isRevisionMode) {
-      await submitDop();
+    if (selectedJobSiteId == null ||
+        selectedJobSiteId!.trim().isEmpty) {
+      showMessage(
+        'Job Site wajib dipilih.',
+      );
       return;
     }
 
-    await submitRevision();
+    if (!isSelectedDopDateValid()) {
+      showMessage(
+        'Tanggal DOP hanya dapat dibuat '
+            'untuk hari ini atau besok.',
+      );
+      return;
+    }
+
+    if (activityDrafts.isEmpty) {
+      showMessage(
+        'Minimal satu aktivitas kendaraan '
+            'wajib tersedia.',
+      );
+      return;
+    }
+
+    if (hasUnfinishedEditing()) {
+      showMessage(
+        'Selesaikan Update Aktivitas '
+            'sebelum Submit DOP.',
+      );
+      return;
+    }
+
+    final shouldSubmit =
+    await showSubmitConfirmation();
+
+    if (!shouldSubmit) {
+      return;
+    }
+
+    setState(() {
+      isSubmitting = true;
+    });
+
+    try {
+      final repository = ref.read(
+        dopSubmissionRepositoryProvider,
+      );
+
+      // Simpan perubahan terbaru pada form
+      // ke Draft yang sama terlebih dahulu.
+      await repository.saveDraft(
+        dopHeaderId: draftHeaderId,
+        jobSiteId: selectedJobSiteId!,
+        dopDate: selectedDate,
+        dayName: getDayName(selectedDate),
+        activities: activityDrafts,
+      );
+
+      // Ubah Draft menjadi DOP resmi.
+      final result =
+      await repository.submitDraft(
+        dopHeaderId: draftHeaderId,
+      );
+
+      ref.invalidate(dopListProvider);
+      ref.invalidate(
+        dopApprovalListProvider,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      showMessage(
+        'Draft berhasil disubmit menjadi '
+            'DOP ${result.dopNumber}.',
+      );
+
+      await Future<void>.delayed(
+        const Duration(
+          milliseconds: 500,
+        ),
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      context.go('/dop-list');
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      showMessage(
+        extractSubmissionError(error),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          isSubmitting = false;
+        });
+      }
+    }
+  }
+
+  Future<void> handleMainSubmit() async {
+    if (isRevisionMode) {
+      await submitRevision();
+      return;
+    }
+
+    if (isDraftMode) {
+      await submitDraftDop();
+      return;
+    }
+
+    await submitDop();
   }
 
   Future<void> submitRevision() async {
