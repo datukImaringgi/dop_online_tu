@@ -6,6 +6,7 @@ import 'package:data_table_2/data_table_2.dart';
 import '../data/dop_list_provider.dart';
 import '../domain/dop_list_item_model.dart';
 import 'widgets/dop_list_filter_bar.dart';
+import '../data/dop_pdf_repository.dart';
 
 class DopListPage extends ConsumerStatefulWidget {
   const DopListPage({super.key});
@@ -389,6 +390,42 @@ class _DopListPageState extends ConsumerState<DopListPage> {
                           },
                         );
                       },
+                      onDownloadPdf: (
+                          DopListItemModel item,
+                          ) async {
+                        final activities =
+                        items.where((row) {
+                          return row.dopHeaderId ==
+                              item.dopHeaderId;
+                        }).toList();
+                        try {
+                          await ref
+                              .read(
+                            dopPdfRepositoryProvider,
+                          )
+                              .downloadDopPdf(
+                            headerItem: item,
+                            activities: activities,
+                          );
+                        } catch (error) {
+                          if (!context.mounted) {
+                            return;
+                          }
+                          ScaffoldMessenger.of(context)
+                              .showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                error
+                                    .toString()
+                                    .replaceFirst(
+                                  'Exception: ',
+                                  '',
+                                ),
+                              ),
+                            ),
+                          );
+                        }
+                      },
                     ),
                   ),
                 ),
@@ -401,15 +438,15 @@ class _DopListPageState extends ConsumerState<DopListPage> {
   }
 }
 
-class _DopDataTable
-    extends StatefulWidget {
+class _DopDataTable extends StatefulWidget {
   final List<DopListItemModel> items;
-  final ValueChanged<DopListItemModel>
-  onContinueDraft;
+  final ValueChanged<DopListItemModel> onContinueDraft;
+  final ValueChanged<DopListItemModel> onDownloadPdf;
 
   const _DopDataTable({
     required this.items,
     required this.onContinueDraft,
+    required this.onDownloadPdf,
   });
 
   @override
@@ -618,35 +655,21 @@ class _DopDataTableState extends State<_DopDataTable> {
         DataRow(
           cells: [
             DataCell(
-              item.status == 'draft'
-                  ? Tooltip(
-                message: 'Lanjutkan Draft',
-                child: IconButton(
-                  onPressed: () {
-                    widget.onContinueDraft(
-                      item,
-                    );
-                  },
-                  visualDensity:
-                  VisualDensity.compact,
-                  padding: EdgeInsets.zero,
-                  constraints:
-                  const BoxConstraints(
-                    minWidth: 30,
-                    minHeight: 30,
-                  ),
-                  icon: const Icon(
-                    Icons.edit_outlined,
-                    size: 17,
-                    color: Color(0xFF2563EB),
-                  ),
+              PopupMenuButton<String>(
+                tooltip: 'Action DOP',
+                padding: EdgeInsets.zero,
+                iconSize: 18,
+                icon: const Icon(
+                  Icons.more_vert,
+                  color: Color(0xFF475569),
                 ),
-              )
-                  : Tooltip(
-                message:
-                'Buat DOP Baru dari Referensi',
-                child: IconButton(
-                  onPressed: () {
+                onSelected: (String action) {
+                  if (action == 'continue') {
+                    widget.onContinueDraft(item);
+                    return;
+                  }
+
+                  if (action == 'reference') {
                     context.go(
                       '/dop-request',
                       extra: {
@@ -654,21 +677,66 @@ class _DopDataTableState extends State<_DopDataTable> {
                         item.dopHeaderId,
                       },
                     );
-                  },
-                  visualDensity:
-                  VisualDensity.compact,
-                  padding: EdgeInsets.zero,
-                  constraints:
-                  const BoxConstraints(
-                    minWidth: 30,
-                    minHeight: 30,
-                  ),
-                  icon: const Icon(
-                    Icons.copy_all_outlined,
-                    size: 17,
-                    color: Color(0xFF7C3AED),
-                  ),
-                ),
+                    return;
+                  }
+
+                  if (action == 'pdf') {
+                    widget.onDownloadPdf(item);
+                  }
+                },
+                itemBuilder: (context) {
+                  if (item.status == 'draft') {
+                    return const [
+                      PopupMenuItem<String>(
+                        value: 'continue',
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.edit_outlined,
+                              size: 17,
+                              color: Color(0xFF2563EB),
+                            ),
+                            SizedBox(width: 9),
+                            Text('Lanjutkan Draft'),
+                          ],
+                        ),
+                      ),
+                    ];
+                  }
+
+                  return const [
+                    PopupMenuItem<String>(
+                      value: 'reference',
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.copy_all_outlined,
+                            size: 17,
+                            color: Color(0xFF7C3AED),
+                          ),
+                          SizedBox(width: 9),
+                          Text(
+                            'Buat dari Referensi',
+                          ),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem<String>(
+                      value: 'pdf',
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.picture_as_pdf_outlined,
+                            size: 17,
+                            color: Color(0xFFDC2626),
+                          ),
+                          SizedBox(width: 9),
+                          Text('Download PDF'),
+                        ],
+                      ),
+                    ),
+                  ];
+                },
               ),
             ),
             DataCell(
