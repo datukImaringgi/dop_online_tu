@@ -716,7 +716,7 @@ class _DopDataTableState extends State<_DopDataTable> {
                           ),
                           SizedBox(width: 9),
                           Text(
-                            'Buat dari Referensi',
+                            'Duplikasi DOP',
                           ),
                         ],
                       ),

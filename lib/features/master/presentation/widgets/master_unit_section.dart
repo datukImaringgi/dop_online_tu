@@ -5,7 +5,7 @@ import '../../data/master_unit_provider.dart';
 import '../../domain/master_unit_model.dart';
 
 class MasterUnitSection
-    extends ConsumerWidget {
+    extends ConsumerStatefulWidget {
   final VoidCallback onAdd;
   final ValueChanged<MasterUnitModel> onEdit;
 
@@ -14,6 +14,28 @@ class MasterUnitSection
     required this.onAdd,
     required this.onEdit,
   });
+
+  @override
+  ConsumerState<MasterUnitSection>
+  createState() {
+    return _MasterUnitSectionState();
+  }
+}
+
+class _MasterUnitSectionState
+    extends ConsumerState<
+        MasterUnitSection> {
+  final unitNumberController =
+  TextEditingController();
+
+  String? selectedCompanyId;
+  String unitNumberQuery = '';
+
+  @override
+  void dispose() {
+    unitNumberController.dispose();
+    super.dispose();
+  }
 
   void handleRefresh(WidgetRef ref) {
     ref.invalidate(masterUnitsProvider);
@@ -68,11 +90,80 @@ class MasterUnitSection
     }
   }
 
-  @override
-  Widget build(
-      BuildContext context,
-      WidgetRef ref,
+  Map<String, String> buildCompanyOptions(
+      List<MasterUnitModel> units,
       ) {
+    final options = <String, String>{};
+
+    for (final unit in units) {
+      final companyId =
+      unit.companyId.trim();
+
+      final companyName =
+      unit.companyName.trim();
+
+      if (companyId.isEmpty ||
+          companyName.isEmpty ||
+          companyName == '-') {
+        continue;
+      }
+
+      options[companyId] = companyName;
+    }
+
+    return options;
+  }
+
+  List<MasterUnitModel> filterUnits(
+      List<MasterUnitModel> units,
+      ) {
+    final normalizedQuery =
+    unitNumberQuery.trim().toLowerCase();
+
+    return units.where((unit) {
+      final matchesCompany =
+          selectedCompanyId == null ||
+              unit.companyId ==
+                  selectedCompanyId;
+
+      final matchesUnitNumber =
+          normalizedQuery.isEmpty ||
+              unit.unitNumber
+                  .toLowerCase()
+                  .contains(normalizedQuery);
+
+      return matchesCompany &&
+          matchesUnitNumber;
+    }).toList();
+  }
+
+  void handleCompanyChanged(
+      String? companyId,
+      ) {
+    setState(() {
+      selectedCompanyId = companyId;
+    });
+  }
+
+  void handleUnitNumberChanged(
+      String value,
+      ) {
+    setState(() {
+      unitNumberQuery =
+          value.trim().toLowerCase();
+    });
+  }
+
+  void clearUnitNumberSearch() {
+    unitNumberController.clear();
+
+    setState(() {
+      unitNumberQuery = '';
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final unitsAsync = ref.watch(
       masterUnitsProvider,
     );
@@ -90,7 +181,11 @@ class MasterUnitSection
       ),
       child: Column(
         children: [
-          _buildHeader(ref),
+          _buildHeader(
+            ref,
+            unitsAsync.value ??
+                <MasterUnitModel>[],
+          ),
           const Divider(
             height: 1,
             color: Color(0xFFE2E8F0),
@@ -99,13 +194,40 @@ class MasterUnitSection
             child: unitsAsync.when(
               loading: buildLoading,
               error: buildError,
-              data: (units) {
-                return buildContent(
-                  context: context,
-                  ref: ref,
-                  units: units,
-                );
-              },
+                data: (units) {
+                  final filteredUnits =
+                  filterUnits(units);
+
+                  return Column(
+                    children: [
+                      Expanded(
+                        child: units.isEmpty
+                            ? buildContent(
+                          context: context,
+                          ref: ref,
+                          units: units,
+                        )
+                            : filteredUnits.isEmpty
+                            ? const Center(
+                          child: Text(
+                            'Tidak ada unit yang '
+                                'sesuai dengan filter.',
+                            style: TextStyle(
+                              color:
+                              Color(0xFF64748B),
+                              fontSize: 12,
+                            ),
+                          ),
+                        )
+                            : buildContent(
+                          context: context,
+                          ref: ref,
+                          units: filteredUnits,
+                        ),
+                      ),
+                    ],
+                  );
+                },
             ),
           ),
         ],
@@ -113,7 +235,23 @@ class MasterUnitSection
     );
   }
 
-  Widget _buildHeader(WidgetRef ref) {
+  Widget _buildHeader(
+      WidgetRef ref,
+      List<MasterUnitModel> units,
+      ) {
+    final companyOptions =
+    buildCompanyOptions(units);
+
+    final companyIds =
+    companyOptions.keys.toList();
+
+    companyIds.sort((first, second) {
+      return (companyOptions[first] ?? '')
+          .compareTo(
+        companyOptions[second] ?? '',
+      );
+    });
+
     return Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: 12,
@@ -136,29 +274,112 @@ class MasterUnitSection
             ),
           ),
           const SizedBox(width: 8),
-          const Expanded(
-            child: Text(
-              'Master Unit',
-              style: TextStyle(
+          const Text(
+            'Master Unit',
+            style: TextStyle(
+              color: Color(0xFF0F172A),
+              fontSize: 13,
+              height: 1.1,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(width: 16),
+          SizedBox(
+            width: 210,
+            child:
+            DropdownButtonFormField<String?>(
+              value: selectedCompanyId,
+              isExpanded: true,
+              decoration:
+              buildFilterDecoration(
+                label: 'Perusahaan',
+                icon:
+                Icons.business_outlined,
+              ),
+              style: const TextStyle(
                 color: Color(0xFF0F172A),
-                fontSize: 13,
-                height: 1.1,
-                fontWeight: FontWeight.w700,
+                fontSize: 11.5,
+                fontWeight: FontWeight.w500,
+              ),
+              items: [
+                const DropdownMenuItem<String?>(
+                  value: null,
+                  child: Text(
+                    'Semua Perusahaan',
+                  ),
+                ),
+                for (
+                final companyId
+                in companyIds
+                )
+                  DropdownMenuItem<String?>(
+                    value: companyId,
+                    child: Text(
+                      companyOptions[
+                      companyId] ??
+                          '-',
+                      maxLines: 1,
+                      overflow:
+                      TextOverflow.ellipsis,
+                    ),
+                  ),
+              ],
+              onChanged:
+              handleCompanyChanged,
+            ),
+          ),
+          const SizedBox(width: 8),
+          SizedBox(
+            width: 190,
+            child: TextField(
+              controller:
+              unitNumberController,
+              onChanged:
+              handleUnitNumberChanged,
+              style: const TextStyle(
+                color: Color(0xFF0F172A),
+                fontSize: 11.5,
+              ),
+              decoration:
+              buildFilterDecoration(
+                label: 'Nomor Unit',
+                icon: Icons.search,
+              ).copyWith(
+                hintText: 'Cari unit',
+                suffixIcon:
+                unitNumberQuery.isEmpty
+                    ? null
+                    : IconButton(
+                  onPressed:
+                  clearUnitNumberSearch,
+                  tooltip:
+                  'Hapus pencarian',
+                  visualDensity:
+                  VisualDensity.compact,
+                  icon: const Icon(
+                    Icons.close,
+                    size: 16,
+                  ),
+                ),
               ),
             ),
           ),
+          const Spacer(),
           OutlinedButton.icon(
             onPressed: () {
               handleRefresh(ref);
             },
             style: OutlinedButton.styleFrom(
-              minimumSize: const Size(0, 34),
-              padding: const EdgeInsets.symmetric(
+              minimumSize:
+              const Size(0, 34),
+              padding:
+              const EdgeInsets.symmetric(
                 horizontal: 10,
               ),
               textStyle: const TextStyle(
                 fontSize: 11.5,
-                fontWeight: FontWeight.w600,
+                fontWeight:
+                FontWeight.w600,
               ),
               shape: RoundedRectangleBorder(
                 borderRadius:
@@ -173,17 +394,20 @@ class MasterUnitSection
           ),
           const SizedBox(width: 8),
           FilledButton.icon(
-            onPressed: onAdd,
+            onPressed: widget.onAdd,
             style: FilledButton.styleFrom(
-              minimumSize: const Size(0, 34),
-              padding: const EdgeInsets.symmetric(
+              minimumSize:
+              const Size(0, 34),
+              padding:
+              const EdgeInsets.symmetric(
                 horizontal: 11,
               ),
               backgroundColor:
               const Color(0xFF2563EB),
               textStyle: const TextStyle(
                 fontSize: 11.5,
-                fontWeight: FontWeight.w600,
+                fontWeight:
+                FontWeight.w600,
               ),
               shape: RoundedRectangleBorder(
                 borderRadius:
@@ -194,9 +418,55 @@ class MasterUnitSection
               Icons.add,
               size: 16,
             ),
-            label: const Text('Tambah Unit'),
+            label:
+            const Text('Tambah Unit'),
           ),
         ],
+      ),
+    );
+  }
+
+  InputDecoration buildFilterDecoration({
+    required String label,
+    required IconData icon,
+  }) {
+    return InputDecoration(
+      labelText: label,
+      isDense: true,
+      filled: true,
+      fillColor: Colors.white,
+      prefixIcon: Icon(
+        icon,
+        size: 17,
+      ),
+      prefixIconConstraints:
+      const BoxConstraints(
+        minWidth: 36,
+        minHeight: 36,
+      ),
+      contentPadding:
+      const EdgeInsets.symmetric(
+        horizontal: 10,
+        vertical: 9,
+      ),
+      border: OutlineInputBorder(
+        borderRadius:
+        BorderRadius.circular(8),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius:
+        BorderRadius.circular(8),
+        borderSide: const BorderSide(
+          color: Color(0xFFCBD5E1),
+        ),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius:
+        BorderRadius.circular(8),
+        borderSide: const BorderSide(
+          color: Color(0xFF2563EB),
+          width: 1.3,
+        ),
       ),
     );
   }
@@ -333,7 +603,7 @@ class MasterUnitSection
             DataCell(
               IconButton(
                 onPressed: () {
-                  onEdit(unit);
+                  widget.onEdit(unit);
                 },
                 tooltip: 'Edit unit',
                 visualDensity:

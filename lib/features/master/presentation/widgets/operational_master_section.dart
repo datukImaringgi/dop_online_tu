@@ -7,7 +7,7 @@ import '../../domain/operational_master_config.dart';
 import 'operational_master_dialog.dart';
 
 class OperationalMasterSection
-    extends ConsumerWidget {
+    extends ConsumerStatefulWidget {
   final OperationalMasterConfig config;
   final int actorHierarchyLayer;
   final String? fixedCompanyId;
@@ -31,6 +31,12 @@ class OperationalMasterSection
     required this.fixedCompanyId,
     required this.fixedCompanyName,
   });
+
+  @override
+  ConsumerState<OperationalMasterSection>
+  createState() {
+    return _OperationalMasterSectionState();
+  }
 
   void openDialog({
     required BuildContext context,
@@ -204,130 +210,6 @@ class OperationalMasterSection
     ref.invalidate(
       operationalMasterDataProvider(
         config.tableName,
-      ),
-    );
-  }
-
-  @override
-  Widget build(
-      BuildContext context,
-      WidgetRef ref,
-      ) {
-    final recordsAsync = ref.watch(
-      operationalMasterDataProvider(
-        config.tableName,
-      ),
-    );
-
-    return Card(
-      margin: EdgeInsets.zero,
-      elevation: 0,
-      color: Colors.white,
-      clipBehavior: Clip.antiAlias,
-      shape: RoundedRectangleBorder(
-        borderRadius:
-        BorderRadius.circular(12),
-        side: const BorderSide(
-          color: Color(0xFFE2E8F0),
-        ),
-      ),
-      child: Column(
-        children: [
-          buildHeader(
-            context,
-            ref,
-          ),
-          const Divider(
-            height: 1,
-            color: Color(0xFFE2E8F0),
-          ),
-          Expanded(
-            child: recordsAsync.when(
-              loading: buildLoading,
-              error: buildError,
-              data: (
-                  List<Map<String, dynamic>>
-                  records,
-                  ) {
-                return buildContent(
-                  context: context,
-                  ref: ref,
-                  records: records,
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget buildHeader(
-      BuildContext context,
-      WidgetRef ref,
-      ) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 12,
-        vertical: 8,
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 24,
-            height: 24,
-            decoration: BoxDecoration(
-              color:
-              const Color(0xFFEFF6FF),
-              borderRadius:
-              BorderRadius.circular(6),
-            ),
-            child: Icon(
-              config.icon,
-              color:
-              const Color(0xFF2563EB),
-              size: 14,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              config.title,
-              style: const TextStyle(
-                color: Color(0xFF0F172A),
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-          OutlinedButton.icon(
-            onPressed: () {
-              handleRefresh(ref);
-            },
-            icon: const Icon(
-              Icons.refresh,
-              size: 16,
-            ),
-            label: const Text('Refresh'),
-          ),
-          const SizedBox(width: 8),
-          FilledButton.icon(
-            onPressed: () {
-              handleAdd(context);
-            },
-            style: FilledButton.styleFrom(
-              backgroundColor:
-              const Color(0xFF2563EB),
-            ),
-            icon: const Icon(
-              Icons.add,
-              size: 16,
-            ),
-            label: Text(
-              'Tambah ${config.singularLabel}',
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -696,5 +578,350 @@ class OperationalMasterSection
     }
 
     return '-';
+  }
+}
+
+class _OperationalMasterSectionState
+    extends ConsumerState<
+        OperationalMasterSection> {
+  String? selectedCompanyId;
+
+  String readCompanyName(
+      Map<String, dynamic> record,
+      ) {
+    return widget.readRelationValue(
+      record,
+      'companies',
+      'company_name',
+    );
+  }
+
+  Map<String, String> buildCompanyOptions(
+      List<Map<String, dynamic>> records,
+      ) {
+    final options = <String, String>{};
+
+    for (final record in records) {
+      final companyId =
+      record['company_id']
+          ?.toString()
+          .trim();
+
+      if (companyId == null ||
+          companyId.isEmpty) {
+        continue;
+      }
+
+      final companyName =
+      readCompanyName(record);
+
+      if (companyName == '-' ||
+          companyName.trim().isEmpty) {
+        continue;
+      }
+
+      options[companyId] = companyName;
+    }
+
+    return options;
+  }
+
+  List<Map<String, dynamic>>
+  filterRecords(
+      List<Map<String, dynamic>> records,
+      ) {
+    final companyId = selectedCompanyId;
+
+    if (companyId == null ||
+        companyId.isEmpty) {
+      return records;
+    }
+
+    return records.where((record) {
+      return record['company_id'] ==
+          companyId;
+    }).toList();
+  }
+
+  void handleCompanyChanged(
+      String? companyId,
+      ) {
+    setState(() {
+      selectedCompanyId = companyId;
+    });
+  }
+
+  InputDecoration buildFilterDecoration() {
+    return InputDecoration(
+      labelText: 'Perusahaan',
+      prefixIcon: const Icon(
+        Icons.business_outlined,
+        size: 17,
+      ),
+      prefixIconConstraints:
+      const BoxConstraints(
+        minWidth: 36,
+        minHeight: 36,
+      ),
+      isDense: true,
+      filled: true,
+      fillColor: Colors.white,
+      contentPadding:
+      const EdgeInsets.symmetric(
+        horizontal: 10,
+        vertical: 9,
+      ),
+      border: OutlineInputBorder(
+        borderRadius:
+        BorderRadius.circular(8),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius:
+        BorderRadius.circular(8),
+        borderSide: const BorderSide(
+          color: Color(0xFFCBD5E1),
+        ),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius:
+        BorderRadius.circular(8),
+        borderSide: const BorderSide(
+          color: Color(0xFF2563EB),
+          width: 1.3,
+        ),
+      ),
+    );
+  }
+
+  Widget buildHeader(
+      BuildContext context,
+      List<Map<String, dynamic>> records,
+      ) {
+    final companyOptions =
+    buildCompanyOptions(records);
+
+    final companyIds =
+    companyOptions.keys.toList();
+
+    companyIds.sort((first, second) {
+      return (companyOptions[first] ?? '')
+          .compareTo(
+        companyOptions[second] ?? '',
+      );
+    });
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 12,
+        vertical: 8,
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              color: const Color(0xFFEFF6FF),
+              borderRadius:
+              BorderRadius.circular(6),
+            ),
+            child: Icon(
+              widget.config.icon,
+              color: const Color(0xFF2563EB),
+              size: 14,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            widget.config.title,
+            style: const TextStyle(
+              color: Color(0xFF0F172A),
+              fontSize: 13,
+              height: 1.1,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(width: 16),
+          SizedBox(
+            width: 220,
+            child:
+            DropdownButtonFormField<String?>(
+              value: selectedCompanyId,
+              isExpanded: true,
+              decoration:
+              buildFilterDecoration(),
+              style: const TextStyle(
+                color: Color(0xFF0F172A),
+                fontSize: 11.5,
+                fontWeight: FontWeight.w500,
+              ),
+              items: [
+                const DropdownMenuItem<String?>(
+                  value: null,
+                  child: Text(
+                    'Semua Perusahaan',
+                  ),
+                ),
+                for (
+                final companyId
+                in companyIds
+                )
+                  DropdownMenuItem<String?>(
+                    value: companyId,
+                    child: Text(
+                      companyOptions[
+                      companyId] ??
+                          '-',
+                      maxLines: 1,
+                      overflow:
+                      TextOverflow.ellipsis,
+                    ),
+                  ),
+              ],
+              onChanged:
+              handleCompanyChanged,
+            ),
+          ),
+          const Spacer(),
+          OutlinedButton.icon(
+            onPressed: () {
+              widget.handleRefresh(ref);
+            },
+            style: OutlinedButton.styleFrom(
+              minimumSize:
+              const Size(0, 34),
+              padding:
+              const EdgeInsets.symmetric(
+                horizontal: 10,
+              ),
+              textStyle: const TextStyle(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w600,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius:
+                BorderRadius.circular(8),
+              ),
+            ),
+            icon: const Icon(
+              Icons.refresh,
+              size: 16,
+            ),
+            label: const Text('Refresh'),
+          ),
+          const SizedBox(width: 8),
+          FilledButton.icon(
+            onPressed: () {
+              widget.handleAdd(context);
+            },
+            style: FilledButton.styleFrom(
+              minimumSize:
+              const Size(0, 34),
+              padding:
+              const EdgeInsets.symmetric(
+                horizontal: 11,
+              ),
+              backgroundColor:
+              const Color(0xFF2563EB),
+              textStyle: const TextStyle(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w600,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius:
+                BorderRadius.circular(8),
+              ),
+            ),
+            icon: const Icon(
+              Icons.add,
+              size: 16,
+            ),
+            label: Text(
+              'Tambah '
+                  '${widget.config.singularLabel}',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final recordsAsync = ref.watch(
+      operationalMasterDataProvider(
+        widget.config.tableName,
+      ),
+    );
+
+    return Card(
+      margin: EdgeInsets.zero,
+      elevation: 0,
+      color: Colors.white,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius:
+        BorderRadius.circular(12),
+        side: const BorderSide(
+          color: Color(0xFFE2E8F0),
+        ),
+      ),
+      child: Column(
+        children: [
+          buildHeader(
+            context,
+            recordsAsync.value ??
+                <Map<String, dynamic>>[],
+          ),
+          const Divider(
+            height: 1,
+            color: Color(0xFFE2E8F0),
+          ),
+          Expanded(
+            child: recordsAsync.when(
+              loading:
+              widget.buildLoading,
+              error: widget.buildError,
+              data: (
+                  List<Map<String, dynamic>>
+                  records,
+                  ) {
+                final filteredRecords =
+                filterRecords(records);
+
+                return Column(
+                  children: [
+                    Expanded(
+                      child: records.isEmpty
+                          ? widget.buildContent(
+                        context: context,
+                        ref: ref,
+                        records: records,
+                      )
+                          : filteredRecords.isEmpty
+                          ? const Center(
+                        child: Text(
+                          'Tidak ada data untuk '
+                              'perusahaan yang dipilih.',
+                          style: TextStyle(
+                            color: Color(0xFF64748B),
+                            fontSize: 12,
+                          ),
+                        ),
+                      )
+                          : widget.buildContent(
+                        context: context,
+                        ref: ref,
+                        records: filteredRecords,
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
