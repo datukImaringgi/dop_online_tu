@@ -536,7 +536,7 @@ class _MasterUnitSectionState
               label: Text('Nomor Unit'),
             ),
             DataColumn(
-              label: Text('Kategori'),
+              label: Text('Tipe Kendaraan'),
             ),
             DataColumn(
               label: Text('Perusahaan'),
@@ -577,7 +577,7 @@ class _MasterUnitSectionState
             ),
             DataCell(
               _UnitCategoryBadge(
-                label: unit.categoryLabel,
+                label: unit.unitTypeLabel,
                 unitType: unit.unitType,
               ),
             ),
@@ -636,12 +636,22 @@ class _UnitCategoryBadge
 
   @override
   Widget build(BuildContext context) {
-    final isMassal =
-        unitType.trim().toUpperCase() == 'BUS';
+    final normalizedType =
+    unitType.trim().toUpperCase();
 
-    final color = isMassal
-        ? const Color(0xFF2563EB)
-        : const Color(0xFF7C3AED);
+    Color color;
+
+    if (normalizedType == 'BUS') {
+      color = const Color(0xFF2563EB);
+    } else if (
+    normalizedType == 'MICRO_BUS') {
+      color = const Color(0xFF0891B2);
+    } else if (
+    normalizedType == 'MANHAUL') {
+      color = const Color(0xFFD97706);
+    } else {
+      color = const Color(0xFF7C3AED);
+    }
 
     return Container(
       padding: const EdgeInsets.symmetric(

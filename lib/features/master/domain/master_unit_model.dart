@@ -59,16 +59,24 @@ class MasterUnitModel {
     );
   }
 
-  String get categoryLabel {
+  String get unitTypeLabel {
     final normalizedType =
     unitType.trim().toUpperCase();
 
+    if (normalizedType == 'MICRO_BUS') {
+      return 'Micro Bus';
+    }
+
+    if (normalizedType == 'MANHAUL') {
+      return 'Manhaul';
+    }
+
     if (normalizedType == 'BUS') {
-      return 'Massal';
+      return 'BUS';
     }
 
     if (normalizedType == 'LV') {
-      return 'Non-Massal';
+      return 'LV';
     }
 
     return unitType;

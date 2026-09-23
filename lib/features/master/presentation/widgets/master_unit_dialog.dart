@@ -465,22 +465,30 @@ class _MasterUnitDialogState
                     fontSize: 12.5,
                   ),
                   decoration: buildDecoration(
-                    label: 'Kategori Kendaraan',
-                    icon:
-                    Icons.category_outlined,
+                    label: 'Tipe Kendaraan',
+                    icon: Icons.category_outlined,
                   ),
                   items: const [
                     DropdownMenuItem<String>(
-                      value: 'BUS',
-                      child: Text('Massal'),
+                      value: 'LV',
+                      child: Text('LV'),
                     ),
                     DropdownMenuItem<String>(
-                      value: 'LV',
-                      child: Text('Non-Massal'),
+                      value: 'BUS',
+                      child: Text('BUS'),
+                    ),
+                    DropdownMenuItem<String>(
+                      value: 'MICRO_BUS',
+                      child: Text('Micro Bus'),
+                    ),
+                    DropdownMenuItem<String>(
+                      value: 'MANHAUL',
+                      child: Text('Manhaul'),
                     ),
                   ],
-                  onChanged:
-                  handleUnitTypeChanged,
+                  onChanged: isSaving
+                      ? null
+                      : handleUnitTypeChanged,
                 ),
                 const SizedBox(height: 10),
                 SwitchListTile(
