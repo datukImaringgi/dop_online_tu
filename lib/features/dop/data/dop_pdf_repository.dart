@@ -29,6 +29,10 @@ class DopPdfRepository {
       );
     }
 
+    final logo = await imageFromAssetBundle(
+      'assets/images/berau_coal_logo.jpg',
+    );
+
     final document = pw.Document(
       title: headerItem.dopNumber,
       author: 'DOP Online',
@@ -42,6 +46,7 @@ class DopPdfRepository {
         header: (context) {
           return _buildHeader(
             headerItem,
+            logo,
           );
         },
         footer: (context) {
@@ -106,6 +111,7 @@ class DopPdfRepository {
 
   pw.Widget _buildHeader(
       DopListItemModel item,
+      pw.ImageProvider logo,
       ) {
     return pw.Container(
       margin: const pw.EdgeInsets.only(
@@ -113,36 +119,63 @@ class DopPdfRepository {
       ),
       padding: const pw.EdgeInsets.symmetric(
         horizontal: 16,
-        vertical: 12,
+        vertical: 10,
       ),
       decoration: pw.BoxDecoration(
         color: PdfColors.blueGrey900,
-        borderRadius: pw.BorderRadius.circular(6),
+        borderRadius:
+        pw.BorderRadius.circular(6),
       ),
       child: pw.Row(
         mainAxisAlignment:
         pw.MainAxisAlignment.spaceBetween,
         children: [
-          pw.Column(
-            crossAxisAlignment:
-            pw.CrossAxisAlignment.start,
+          pw.Row(
             children: [
-              pw.Text(
-                'DOP ONLINE',
-                style: pw.TextStyle(
+              pw.Container(
+                padding: const pw.EdgeInsets.symmetric(
+                  horizontal: 6,
+                  vertical: 5,
+                ),
+                decoration: pw.BoxDecoration(
                   color: PdfColors.white,
-                  fontSize: 17,
-                  fontWeight:
-                  pw.FontWeight.bold,
+                  borderRadius:
+                  pw.BorderRadius.circular(5),
+                ),
+                child: pw.ConstrainedBox(
+                  constraints: const pw.BoxConstraints(
+                    maxWidth: 90,
+                    maxHeight: 38,
+                  ),
+                  child: pw.Image(
+                    logo,
+                    fit: pw.BoxFit.contain,
+                  ),
                 ),
               ),
-              pw.SizedBox(height: 3),
-              pw.Text(
-                'Daily Operation Plan Transportasi',
-                style: const pw.TextStyle(
-                  color: PdfColors.white,
-                  fontSize: 9,
-                ),
+              pw.SizedBox(width: 10),
+              pw.Column(
+                crossAxisAlignment:
+                pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text(
+                    'DOP ONLINE',
+                    style: pw.TextStyle(
+                      color: PdfColors.white,
+                      fontSize: 17,
+                      fontWeight:
+                      pw.FontWeight.bold,
+                    ),
+                  ),
+                  pw.SizedBox(height: 3),
+                  pw.Text(
+                    'Daily Operation Plan Transportasi',
+                    style: const pw.TextStyle(
+                      color: PdfColors.white,
+                      fontSize: 9,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -187,7 +220,7 @@ class DopPdfRepository {
           pw.SizedBox(width: 20),
           pw.Expanded(
             child: _informationColumn([
-              ['Status', _formatStatus(item.status)],
+              ['Status', _formatStatusWithApprovalTime(item),],
               ['Dibuat Oleh', item.createdByName],
               [
                 'Jumlah Aktivitas',
@@ -248,6 +281,7 @@ class DopPdfRepository {
         'No',
         'Pekerjaan',
         'Unit',
+        'Tipe Unit',
         'Driver',
         'Expired SID',
         'Expired SIMPER',
@@ -258,6 +292,8 @@ class DopPdfRepository {
         'Shift',
         'RIC',
         'JSA',
+        'Risiko',
+        'Bahaya',
       ],
       data: [
         for (
@@ -269,9 +305,13 @@ class DopPdfRepository {
             '${index + 1}',
             activities[index].workPlan,
             activities[index].unitNumber,
+            _formatUnitType(
+              activities[index].unitType,
+            ),
             activities[index].driverName,
             _formatDateText(
-              activities[index].sidExpiredDate,
+              activities[index]
+                  .sidExpiredDate,
             ),
             _formatDateText(
               activities[index]
@@ -290,22 +330,27 @@ class DopPdfRepository {
             activities[index].shift,
             activities[index].controlRoom,
             activities[index].jsaProcedure,
+            'High',
+            'Unit ditabrak, tertabrak '
+                '& terbalik',
           ],
       ],
       headerStyle: pw.TextStyle(
         color: PdfColors.white,
-        fontSize: 6,
+        fontSize: 5.5,
         fontWeight: pw.FontWeight.bold,
       ),
-      headerDecoration: const pw.BoxDecoration(
+      headerDecoration:
+      const pw.BoxDecoration(
         color: PdfColors.blueGrey800,
       ),
       cellStyle: const pw.TextStyle(
-        fontSize: 5.6,
-        lineSpacing: 1.2,
+        fontSize: 5.1,
+        lineSpacing: 1.15,
       ),
-      cellPadding: const pw.EdgeInsets.symmetric(
-        horizontal: 3,
+      cellPadding:
+      const pw.EdgeInsets.symmetric(
+        horizontal: 2.5,
         vertical: 4,
       ),
       cellAlignment:
@@ -315,19 +360,22 @@ class DopPdfRepository {
         width: 0.5,
       ),
       columnWidths: {
-        0: const pw.FixedColumnWidth(22),
-        1: const pw.FlexColumnWidth(2.4),
-        2: const pw.FlexColumnWidth(0.9),
-        3: const pw.FlexColumnWidth(1.2),
-        4: const pw.FlexColumnWidth(1),
-        5: const pw.FlexColumnWidth(1),
-        6: const pw.FlexColumnWidth(1),
-        7: const pw.FlexColumnWidth(1.2),
-        8: const pw.FlexColumnWidth(1.2),
-        9: const pw.FlexColumnWidth(1.1),
-        10: const pw.FlexColumnWidth(0.8),
-        11: const pw.FlexColumnWidth(1.1),
-        12: const pw.FlexColumnWidth(2),
+        0: const pw.FixedColumnWidth(19),
+        1: const pw.FlexColumnWidth(2.2),
+        2: const pw.FlexColumnWidth(0.75),
+        3: const pw.FlexColumnWidth(0.8),
+        4: const pw.FlexColumnWidth(1.05),
+        5: const pw.FlexColumnWidth(0.85),
+        6: const pw.FlexColumnWidth(0.85),
+        7: const pw.FlexColumnWidth(0.85),
+        8: const pw.FlexColumnWidth(1.05),
+        9: const pw.FlexColumnWidth(1.05),
+        10: const pw.FlexColumnWidth(0.9),
+        11: const pw.FlexColumnWidth(0.7),
+        12: const pw.FlexColumnWidth(0.95),
+        13: const pw.FlexColumnWidth(1.7),
+        14: const pw.FlexColumnWidth(0.6),
+        15: const pw.FlexColumnWidth(1.7),
       },
     );
   }
@@ -471,13 +519,18 @@ class DopPdfRepository {
           columnWidths: const {
             0: pw.FlexColumnWidth(),
             1: pw.FlexColumnWidth(),
+            2: pw.FlexColumnWidth(),
           },
           children: [
             pw.TableRow(
-              decoration: const pw.BoxDecoration(
+              decoration:
+              const pw.BoxDecoration(
                 color: PdfColors.blueGrey800,
               ),
               children: [
+                _buildLayerHeaderCell(
+                  'Dibuat Oleh',
+                ),
                 _buildLayerHeaderCell(
                   'Disetujui Oleh',
                 ),
@@ -488,6 +541,11 @@ class DopPdfRepository {
             ),
             pw.TableRow(
               children: [
+                _buildLayerValueCell(
+                  _normalizeText(
+                    item.createdByName,
+                  ),
+                ),
                 _buildLayerValueCell(
                   _normalizeText(
                     item.approvedByName,
@@ -504,6 +562,48 @@ class DopPdfRepository {
         ),
       ],
     );
+  }
+
+  String _formatStatusWithApprovalTime(
+      DopListItemModel item,
+      ) {
+    final statusText =
+    _formatStatus(item.status);
+
+    if (item.status != 'approved' ||
+        item.approvedAt == null) {
+      return statusText;
+    }
+
+    return '$statusText - '
+        '${_formatDateTime(item.approvedAt!)}';
+  }
+
+  String _formatDateTime(DateTime value) {
+    final localValue = value.toLocal();
+
+    final day = localValue.day
+        .toString()
+        .padLeft(2, '0');
+
+    final month = localValue.month
+        .toString()
+        .padLeft(2, '0');
+
+    final year = localValue.year
+        .toString()
+        .padLeft(4, '0');
+
+    final hour = localValue.hour
+        .toString()
+        .padLeft(2, '0');
+
+    final minute = localValue.minute
+        .toString()
+        .padLeft(2, '0');
+
+    return '$day-$month-$year '
+        '$hour:$minute';
   }
 
   String _formatStatus(String status) {
@@ -523,6 +623,34 @@ class DopPdfRepository {
       return 'Rejected';
     }
     return status;
+  }
+
+  String _formatUnitType(String value) {
+    final normalized =
+    value.trim().toUpperCase();
+
+    if (normalized == 'MICRO_BUS') {
+      return 'Micro Bus';
+    }
+
+    if (normalized == 'MANHAUL') {
+      return 'Manhaul';
+    }
+
+    if (normalized == 'BUS') {
+      return 'BUS';
+    }
+
+    if (normalized == 'LV') {
+      return 'LV';
+    }
+
+    if (normalized.isEmpty ||
+        normalized == '-') {
+      return '-';
+    }
+
+    return value.trim();
   }
 
   String _formatArea(String value) {
