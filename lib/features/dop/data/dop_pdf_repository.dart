@@ -2,16 +2,248 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../domain/dop_list_item_model.dart';
+import '../../../shared/providers/supabase_provider.dart';
 
 final dopPdfRepositoryProvider =
 Provider<DopPdfRepository>((ref) {
-  return const DopPdfRepository();
+  final supabase = ref.watch(
+    supabaseProvider,
+  );
+
+  return DopPdfRepository(
+    supabase: supabase,
+  );
 });
 
 class DopPdfRepository {
-  const DopPdfRepository();
+  final SupabaseClient supabase;
+
+  const DopPdfRepository({
+    required this.supabase,
+  });
+
+  Future<DopPdfApprovalMetadata>
+  loadApprovalMetadata({
+    required String dopHeaderId,
+  }) async {
+    final headerResponse = await supabase
+        .from('dop_headers')
+        .select(
+      'company_id, '
+          'created_by, '
+          'submitted_at, '
+          'created_at',
+    )
+        .eq('id', dopHeaderId)
+        .maybeSingle();
+
+    if (headerResponse == null) {
+      throw Exception(
+        'Header DOP tidak ditemukan.',
+      );
+    }
+
+    final header =
+    Map<String, dynamic>.from(
+      headerResponse,
+    );
+
+    final companyId =
+    header['company_id']?.toString();
+
+    final createdBy =
+    header['created_by']?.toString();
+
+    final createdAt = _readDateTime(
+      header['submitted_at'] ??
+          header['created_at'],
+    );
+
+    final approvalResponse = await supabase
+        .from('dop_approvals')
+        .select(
+      'approval_level, '
+          'approver_id, '
+          'status, '
+          'approved_at',
+    )
+        .eq(
+      'dop_header_id',
+      dopHeaderId,
+    )
+        .inFilter(
+      'approval_level',
+      [3, 4],
+    );
+
+    final approvals =
+    List<Map<String, dynamic>>.from(
+      approvalResponse,
+    );
+
+    String? layer3UserId;
+    String? layer4UserId;
+    DateTime? layer3ApprovedAt;
+    DateTime? layer4ApprovedAt;
+
+    for (final approval in approvals) {
+      final level = approval[
+      'approval_level'];
+
+      final status =
+      approval['status']?.toString();
+
+      if (status != 'approved') {
+        continue;
+      }
+
+      final approverId =
+      approval['approver_id']
+          ?.toString();
+
+      final approvedAt = _readDateTime(
+        approval['approved_at'],
+      );
+
+      if (level == 3) {
+        layer3UserId = approverId;
+        layer3ApprovedAt = approvedAt;
+      }
+
+      if (level == 4) {
+        layer4UserId = approverId;
+        layer4ApprovedAt = approvedAt;
+      }
+    }
+
+    final userIds = <String>{
+      if (createdBy != null &&
+          createdBy.isNotEmpty)
+        createdBy,
+      if (layer3UserId != null &&
+          layer3UserId.isNotEmpty)
+        layer3UserId,
+      if (layer4UserId != null &&
+          layer4UserId.isNotEmpty)
+        layer4UserId,
+    };
+
+    final profileNames =
+    <String, String>{};
+
+    final positions =
+    <String, String>{};
+
+    if (userIds.isNotEmpty) {
+      final profileResponse = await supabase
+          .from('profiles')
+          .select('id, full_name')
+          .inFilter(
+        'id',
+        userIds.toList(),
+      );
+
+      final profiles =
+      List<Map<String, dynamic>>.from(
+        profileResponse,
+      );
+
+      for (final profile in profiles) {
+        final userId =
+        profile['id']?.toString();
+
+        if (userId == null) {
+          continue;
+        }
+
+        profileNames[userId] =
+            profile['full_name']
+                ?.toString()
+                .trim() ??
+                '-';
+      }
+
+      var positionQuery = supabase
+          .from('company_users')
+          .select(
+        'user_id, position',
+      )
+          .inFilter(
+        'user_id',
+        userIds.toList(),
+      )
+          .eq('is_active', true);
+
+      if (companyId != null &&
+          companyId.isNotEmpty) {
+        positionQuery = positionQuery.eq(
+          'company_id',
+          companyId,
+        );
+      }
+
+      final positionResponse =
+      await positionQuery;
+
+      final positionRecords =
+      List<Map<String, dynamic>>.from(
+        positionResponse,
+      );
+
+      for (final record
+      in positionRecords) {
+        final userId =
+        record['user_id']?.toString();
+
+        if (userId == null) {
+          continue;
+        }
+
+        positions[userId] =
+            record['position']
+                ?.toString()
+                .trim() ??
+                '-';
+      }
+    }
+
+    return DopPdfApprovalMetadata(
+      creatorPosition:
+      positions[createdBy] ?? '-',
+      createdAt: createdAt,
+      layer3Name:
+      profileNames[layer3UserId] ?? '-',
+      layer3Position:
+      positions[layer3UserId] ?? '-',
+      layer3ApprovedAt:
+      layer3ApprovedAt,
+      layer4Name:
+      profileNames[layer4UserId] ?? '-',
+      layer4Position:
+      positions[layer4UserId] ?? '-',
+      layer4ApprovedAt:
+      layer4ApprovedAt,
+    );
+  }
+
+  DateTime? _readDateTime(
+      dynamic value,
+      ) {
+    if (value == null) {
+      return null;
+    }
+
+    final text = value.toString().trim();
+
+    if (text.isEmpty) {
+      return null;
+    }
+
+    return DateTime.tryParse(text);
+  }
 
   Future<void> downloadDopPdf({
     required DopListItemModel headerItem,
@@ -28,6 +260,14 @@ class DopPdfRepository {
         'Aktivitas DOP tidak ditemukan.',
       );
     }
+
+    final approvalMetadata =
+    await loadApprovalMetadata(
+      dopHeaderId:
+      headerItem.dopHeaderId,
+    );
+
+    final printedAt = DateTime.now();
 
     final logo = await imageFromAssetBundle(
       'assets/images/berau_coal_logo.jpg',
@@ -51,17 +291,30 @@ class DopPdfRepository {
         },
         footer: (context) {
           return pw.Container(
-            alignment: pw.Alignment.centerRight,
             margin: const pw.EdgeInsets.only(
               top: 10,
             ),
-            child: pw.Text(
-              'Halaman ${context.pageNumber} '
-                  'dari ${context.pagesCount}',
-              style: const pw.TextStyle(
-                fontSize: 8,
-                color: PdfColors.grey700,
-              ),
+            child: pw.Row(
+              mainAxisAlignment:
+              pw.MainAxisAlignment.spaceBetween,
+              children: [
+                pw.Text(
+                  'PDF printed at: '
+                      '${_formatDateTime(printedAt)}',
+                  style: const pw.TextStyle(
+                    fontSize: 8,
+                    color: PdfColors.grey700,
+                  ),
+                ),
+                pw.Text(
+                  'Halaman ${context.pageNumber} '
+                      'dari ${context.pagesCount}',
+                  style: const pw.TextStyle(
+                    fontSize: 8,
+                    color: PdfColors.grey700,
+                  ),
+                ),
+              ],
             ),
           );
         },
@@ -89,6 +342,7 @@ class DopPdfRepository {
             pw.SizedBox(height: 10),
             _buildApprovalInformation(
               headerItem,
+              approvalMetadata,
             ),
           ];
         },
@@ -130,61 +384,47 @@ class DopPdfRepository {
         mainAxisAlignment:
         pw.MainAxisAlignment.spaceBetween,
         children: [
-          pw.Row(
+          pw.Column(
+            crossAxisAlignment:
+            pw.CrossAxisAlignment.start,
             children: [
-              pw.Container(
-                padding: const pw.EdgeInsets.symmetric(
-                  horizontal: 6,
-                  vertical: 5,
-                ),
-                decoration: pw.BoxDecoration(
+              pw.Text(
+                'DOP ONLINE',
+                style: pw.TextStyle(
                   color: PdfColors.white,
-                  borderRadius:
-                  pw.BorderRadius.circular(5),
-                ),
-                child: pw.ConstrainedBox(
-                  constraints: const pw.BoxConstraints(
-                    maxWidth: 90,
-                    maxHeight: 38,
-                  ),
-                  child: pw.Image(
-                    logo,
-                    fit: pw.BoxFit.contain,
-                  ),
+                  fontSize: 17,
+                  fontWeight: pw.FontWeight.bold,
                 ),
               ),
-              pw.SizedBox(width: 10),
-              pw.Column(
-                crossAxisAlignment:
-                pw.CrossAxisAlignment.start,
-                children: [
-                  pw.Text(
-                    'DOP ONLINE',
-                    style: pw.TextStyle(
-                      color: PdfColors.white,
-                      fontSize: 17,
-                      fontWeight:
-                      pw.FontWeight.bold,
-                    ),
-                  ),
-                  pw.SizedBox(height: 3),
-                  pw.Text(
-                    'Daily Operation Plan Transportasi',
-                    style: const pw.TextStyle(
-                      color: PdfColors.white,
-                      fontSize: 9,
-                    ),
-                  ),
-                ],
+              pw.SizedBox(height: 3),
+              pw.Text(
+                'Daily Operation Plan Transportasi',
+                style: const pw.TextStyle(
+                  color: PdfColors.white,
+                  fontSize: 9,
+                ),
               ),
             ],
           ),
-          pw.Text(
-            item.dopNumber,
-            style: pw.TextStyle(
+          pw.Container(
+            padding: const pw.EdgeInsets.symmetric(
+              horizontal: 6,
+              vertical: 5,
+            ),
+            decoration: pw.BoxDecoration(
               color: PdfColors.white,
-              fontSize: 13,
-              fontWeight: pw.FontWeight.bold,
+              borderRadius:
+              pw.BorderRadius.circular(5),
+            ),
+            child: pw.ConstrainedBox(
+              constraints: const pw.BoxConstraints(
+                maxWidth: 90,
+                maxHeight: 38,
+              ),
+              child: pw.Image(
+                logo,
+                fit: pw.BoxFit.contain,
+              ),
             ),
           ),
         ],
@@ -220,8 +460,8 @@ class DopPdfRepository {
           pw.SizedBox(width: 20),
           pw.Expanded(
             child: _informationColumn([
-              ['Status', _formatStatusWithApprovalTime(item),],
-              ['Dibuat Oleh', item.createdByName],
+              ['Nomor DOP', item.dopNumber,],
+              ['Status', _formatStatus(item.status),],
               [
                 'Jumlah Aktivitas',
                 activityCount.toString(),
@@ -291,9 +531,9 @@ class DopPdfRepository {
         'Area',
         'Shift',
         'RIC',
-        'JSA',
-        'Risiko',
         'Bahaya',
+        'Risiko',
+        'JSA',
       ],
       data: [
         for (
@@ -329,10 +569,10 @@ class DopPdfRepository {
             ),
             activities[index].shift,
             activities[index].controlRoom,
-            activities[index].jsaProcedure,
-            'High',
             'Unit ditabrak, tertabrak '
                 '& terbalik',
+            'High',
+            activities[index].jsaProcedure,
           ],
       ],
       headerStyle: pw.TextStyle(
@@ -497,6 +737,7 @@ class DopPdfRepository {
 
   pw.Widget _buildApprovalInformation(
       DopListItemModel item,
+      DopPdfApprovalMetadata metadata,
       ) {
     return pw.Column(
       crossAxisAlignment:
@@ -541,20 +782,26 @@ class DopPdfRepository {
             ),
             pw.TableRow(
               children: [
-                _buildLayerValueCell(
-                  _normalizeText(
-                    item.createdByName,
-                  ),
+                _buildApprovalValueCell(
+                  name: item.createdByName,
+                  position:
+                  metadata.creatorPosition,
+                  dateTime:
+                  metadata.createdAt,
                 ),
-                _buildLayerValueCell(
-                  _normalizeText(
-                    item.approvedByName,
-                  ),
+                _buildApprovalValueCell(
+                  name: metadata.layer3Name,
+                  position:
+                  metadata.layer3Position,
+                  dateTime:
+                  metadata.layer3ApprovedAt,
                 ),
-                _buildLayerValueCell(
-                  _normalizeText(
-                    item.knownByName,
-                  ),
+                _buildApprovalValueCell(
+                  name: metadata.layer4Name,
+                  position:
+                  metadata.layer4Position,
+                  dateTime:
+                  metadata.layer4ApprovedAt,
                 ),
               ],
             ),
@@ -564,19 +811,52 @@ class DopPdfRepository {
     );
   }
 
-  String _formatStatusWithApprovalTime(
-      DopListItemModel item,
-      ) {
-    final statusText =
-    _formatStatus(item.status);
-
-    if (item.status != 'approved' ||
-        item.approvedAt == null) {
-      return statusText;
-    }
-
-    return '$statusText - '
-        '${_formatDateTime(item.approvedAt!)}';
+  pw.Widget _buildApprovalValueCell({
+    required String name,
+    required String position,
+    required DateTime? dateTime,
+  }) {
+    return pw.Container(
+      padding: const pw.EdgeInsets.symmetric(
+        horizontal: 10,
+        vertical: 8,
+      ),
+      alignment: pw.Alignment.center,
+      child: pw.Column(
+        mainAxisSize: pw.MainAxisSize.min,
+        children: [
+          pw.Text(
+            _normalizeText(name),
+            textAlign: pw.TextAlign.center,
+            style: pw.TextStyle(
+              color: PdfColors.blueGrey900,
+              fontSize: 8.5,
+              fontWeight: pw.FontWeight.bold,
+            ),
+          ),
+          pw.SizedBox(height: 20),
+          pw.Text(
+            _normalizeText(position),
+            textAlign: pw.TextAlign.center,
+            style: const pw.TextStyle(
+              color: PdfColors.grey700,
+              fontSize: 7.5,
+            ),
+          ),
+          pw.SizedBox(height: 4),
+          pw.Text(
+            dateTime == null
+                ? '-'
+                : _formatDateTime(dateTime),
+            textAlign: pw.TextAlign.center,
+            style: const pw.TextStyle(
+              color: PdfColors.grey700,
+              fontSize: 7.5,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   String _formatDateTime(DateTime value) {
@@ -695,4 +975,28 @@ class DopPdfRepository {
     }
     return value;
   }
+}
+
+class DopPdfApprovalMetadata {
+  final String creatorPosition;
+  final DateTime? createdAt;
+
+  final String layer3Name;
+  final String layer3Position;
+  final DateTime? layer3ApprovedAt;
+
+  final String layer4Name;
+  final String layer4Position;
+  final DateTime? layer4ApprovedAt;
+
+  const DopPdfApprovalMetadata({
+    required this.creatorPosition,
+    required this.createdAt,
+    required this.layer3Name,
+    required this.layer3Position,
+    required this.layer3ApprovedAt,
+    required this.layer4Name,
+    required this.layer4Position,
+    required this.layer4ApprovedAt,
+  });
 }
