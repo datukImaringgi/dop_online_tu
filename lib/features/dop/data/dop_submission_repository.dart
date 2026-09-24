@@ -27,6 +27,7 @@ class DopSubmissionRepository {
     required DateTime dopDate,
     required String dayName,
     required List<DopActivityDraft> activities,
+    String dopType = 'scheduled',
   }) async {
     if (jobSiteId.trim().isEmpty) {
       throw Exception('Job Site wajib dipilih');
@@ -35,6 +36,16 @@ class DopSubmissionRepository {
     if (activities.isEmpty) {
       throw Exception(
         'Minimal satu aktivitas kendaraan wajib ditambahkan',
+      );
+    }
+
+    final normalizedDopType =
+    dopType.trim().toLowerCase();
+
+    if (normalizedDopType != 'scheduled' &&
+        normalizedDopType != 'unscheduled') {
+      throw Exception(
+        'Tipe DOP tidak valid.',
       );
     }
 
@@ -53,6 +64,7 @@ class DopSubmissionRepository {
         'p_dop_date': formatDate(dopDate),
         'p_day_name': dayName,
         'p_activities': activityPayloads,
+        'p_dop_type': normalizedDopType,
       },
     );
 
@@ -79,6 +91,7 @@ class DopSubmissionRepository {
     required DateTime dopDate,
     required String dayName,
     required List<DopActivityDraft> activities,
+    String dopType = 'scheduled',
   }) async {
     final cleanedJobSiteId =
     jobSiteId.trim();
@@ -93,6 +106,16 @@ class DopSubmissionRepository {
       throw Exception(
         'Minimal satu aktivitas kendaraan '
             'diperlukan untuk menyimpan draft.',
+      );
+    }
+
+    final normalizedDopType =
+    dopType.trim().toLowerCase();
+
+    if (normalizedDopType != 'scheduled' &&
+        normalizedDopType != 'unscheduled') {
+      throw Exception(
+        'Tipe Draft DOP tidak valid.',
       );
     }
 
@@ -111,19 +134,15 @@ class DopSubmissionRepository {
     final response = await supabase.rpc(
       'save_dop_draft',
       params: {
-        'p_dop_header_id':
-        cleanedDopHeaderId == null ||
+        'p_dop_header_id': cleanedDopHeaderId == null ||
             cleanedDopHeaderId.isEmpty
             ? null
             : cleanedDopHeaderId,
-        'p_job_site_id':
-        cleanedJobSiteId,
-        'p_dop_date':
-        formatDate(dopDate),
-        'p_day_name':
-        dayName.trim(),
-        'p_activities':
-        activityPayloads,
+        'p_job_site_id': cleanedJobSiteId,
+        'p_dop_date': formatDate(dopDate),
+        'p_day_name': dayName.trim(),
+        'p_activities': activityPayloads,
+        'p_dop_type': normalizedDopType,
       },
     );
 

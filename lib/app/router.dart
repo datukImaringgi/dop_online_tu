@@ -50,6 +50,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/dop-request',
             builder: (context, state) {
+              bool isUnscheduledMode = false;
               final extra = state.extra;
 
               String? revisionDopHeaderId;
@@ -62,6 +63,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               String? referenceDopHeaderId;
 
               if (extra is Map) {
+                final unscheduledValue =
+                extra['isUnscheduledMode'];
+
+                if (unscheduledValue is bool) {
+                  isUnscheduledMode =
+                      unscheduledValue;
+                }
+
                 final draftId =
                 extra['draftDopHeaderId'];
 
@@ -82,12 +91,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               }
 
               return DopRequestPage(
-                revisionDopHeaderId:
-                revisionDopHeaderId,
-                draftDopHeaderId:
-                draftDopHeaderId,
-                referenceDopHeaderId:
-                referenceDopHeaderId,
+                revisionDopHeaderId: revisionDopHeaderId,
+                draftDopHeaderId: draftDopHeaderId,
+                referenceDopHeaderId: referenceDopHeaderId,
+                isUnscheduledMode: isUnscheduledMode,
               );
             },
           ),

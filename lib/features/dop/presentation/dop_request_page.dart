@@ -20,12 +20,14 @@ class DopRequestPage
   final String? revisionDopHeaderId;
   final String? draftDopHeaderId;
   final String? referenceDopHeaderId;
+  final bool isUnscheduledMode;
 
   const DopRequestPage({
     super.key,
     this.revisionDopHeaderId,
     this.draftDopHeaderId,
     this.referenceDopHeaderId,
+    this.isUnscheduledMode = false,
   });
 
   bool get isRevisionMode {
@@ -75,6 +77,16 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
   bool hasAppliedDraftData = false;
   bool hasAppliedReferenceData = false;
   String referenceDopNumber = '';
+
+  bool get isUnscheduledMode {
+    return widget.isUnscheduledMode;
+  }
+
+  String get activeDopType {
+    return isUnscheduledMode
+        ? 'unscheduled'
+        : 'scheduled';
+  }
 
   bool get isDraftMode {
     return widget.isDraftMode;
@@ -357,14 +369,22 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
       const Duration(days: 1),
     );
 
-    final normalizedSelectedDate = DateTime(
+    final normalizedSelectedDate =
+    DateTime(
       selectedDate.year,
       selectedDate.month,
       selectedDate.day,
     );
 
-    return normalizedSelectedDate == today ||
-        normalizedSelectedDate == tomorrow;
+    if (isUnscheduledMode) {
+      return normalizedSelectedDate ==
+          today;
+    }
+
+    return normalizedSelectedDate ==
+        today ||
+        normalizedSelectedDate ==
+            tomorrow;
   }
 
   bool hasUnfinishedEditing() {
@@ -417,6 +437,17 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
     if (widget.isDraftMode) {
       activeDraftHeaderId =
           widget.draftDopHeaderId;
+    }
+
+    if (widget.isUnscheduledMode &&
+        !widget.isDraftMode) {
+      final now = DateTime.now();
+
+      selectedDate = DateTime(
+        now.year,
+        now.month,
+        now.day,
+      );
     }
   }
 
@@ -611,6 +642,7 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
         dopDate: selectedDate,
         dayName: getDayName(selectedDate),
         activities: activityDrafts,
+        dopType: activeDopType,
       );
 
       ref.invalidate(dopListProvider);
@@ -671,8 +703,12 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
 
     if (!isSelectedDopDateValid()) {
       showMessage(
-        'Tanggal DOP hanya dapat dibuat '
-            'untuk hari ini atau besok.',
+        isUnscheduledMode
+            ? 'Unscheduled DOP hanya '
+            'dapat dibuat untuk hari ini.'
+            : 'Tanggal DOP hanya dapat '
+            'dibuat untuk hari ini '
+            'atau besok.',
       );
       return;
     }
@@ -1578,28 +1614,59 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
     );
   }
 
+  void showFixedDateInformation() {
+    if (isUnscheduledMode) {
+      showMessage(
+        'Tanggal Unscheduled DOP '
+            'otomatis ditetapkan untuk hari ini '
+            'dan tidak dapat diubah.',
+      );
+      return;
+    }
+
+    showRevisionDateInformation();
+  }
+
   Widget buildSubmitConfirmationDialog(
       BuildContext dialogContext,
       ) {
+    final documentLabel =
+    isUnscheduledMode
+        ? 'Unscheduled DOP'
+        : 'DOP';
+
     return AlertDialog(
-      title: const Text('Submit DOP'),
+      title: Text(
+        'Submit $documentLabel',
+      ),
       content: Text(
-        'Submit DOP untuk ${activityDrafts.length} aktivitas kendaraan?\n\n'
-            'Tanggal: ${getFormattedHeaderDate()}',
+        'Submit $documentLabel untuk '
+            '${activityDrafts.length} '
+            'aktivitas kendaraan?\n\n'
+            'Tanggal: '
+            '${getFormattedHeaderDate()}',
       ),
       actions: [
         TextButton(
           onPressed: () {
-            Navigator.of(dialogContext).pop(false);
+            Navigator.of(
+              dialogContext,
+            ).pop(false);
           },
           child: const Text('Batal'),
         ),
         FilledButton.icon(
           onPressed: () {
-            Navigator.of(dialogContext).pop(true);
+            Navigator.of(
+              dialogContext,
+            ).pop(true);
           },
-          icon: const Icon(Icons.send_outlined),
-          label: const Text('Submit DOP'),
+          icon: const Icon(
+            Icons.send_outlined,
+          ),
+          label: Text(
+            'Submit $documentLabel',
+          ),
         ),
       ],
     );
@@ -1842,6 +1909,8 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
                               ? 'Lanjutkan Draft DOP'
                               : isReferenceMode
                               ? 'Buat DOP dari Referensi'
+                              : isUnscheduledMode
+                              ? 'Unscheduled Form DOP'
                               : 'Request Form DOP',
                           style: const TextStyle(
                             fontSize: 24,
@@ -1862,7 +1931,11 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
                               ? referenceDopNumber.isEmpty
                               ? 'Menyiapkan data referensi DOP...'
                               : 'Referensi: $referenceDopNumber'
-                              : 'Input Daily Operation Plan Transportasi',
+                              : isUnscheduledMode
+                              ? 'Pencatatan aktivitas kendaraan '
+                              'yang berubah pada hari berjalan'
+                              : 'Input Daily Operation Plan '
+                              'Transportasi',
                           style: const TextStyle(
                             color: Color(0xFF64748B),
                             fontSize: 12.5,
@@ -1912,7 +1985,8 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
                   ),
 
                   const SizedBox(width: 8),
-                  if (!isRevisionMode) ...[
+                  if (!isRevisionMode &&
+                      !isUnscheduledMode) ...[
                     OutlinedButton.icon(
                       onPressed:
                       isSubmitting ||
@@ -2019,6 +2093,9 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
                           : isRevisionMode
                           ? 'Submit Ulang Revisi '
                           '(${activityDrafts.length})'
+                          : isUnscheduledMode
+                          ? 'Submit Unscheduled '
+                          '(${activityDrafts.length})'
                           : 'Submit DOP '
                           '(${activityDrafts.length})',
                     ),
@@ -2030,6 +2107,47 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
                 child: SingleChildScrollView(
                   child: Column(
                     children: [
+                      if (isUnscheduledMode) ...[
+                        Container(
+                          width: double.infinity,
+                          padding:
+                          const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color:
+                            const Color(0xFFFFF7ED),
+                            borderRadius:
+                            BorderRadius.circular(10),
+                            border: Border.all(
+                              color:
+                              const Color(0xFFFDBA74),
+                            ),
+                          ),
+                          child: const Row(
+                            children: [
+                              Icon(
+                                Icons.warning_amber_outlined,
+                                color: Color(0xFFEA580C),
+                              ),
+                              SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  'UNSCHEDULED DOP - '
+                                      'Digunakan untuk mencatat '
+                                      'aktivitas kendaraan yang '
+                                      'berubah pada hari berjalan.',
+                                  style: TextStyle(
+                                    color:
+                                    Color(0xFF9A3412),
+                                    fontWeight:
+                                    FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
                       if (isReferenceMode) ...[
                         buildReferenceLoader(),
                         const SizedBox(height: 12),
@@ -2051,8 +2169,10 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
                       DopHeaderForm(
                         formattedDate:
                           getFormattedHeaderDate(),
-                        onDateTap: isRevisionMode
-                            ? showRevisionDateInformation
+                        onDateTap:
+                        isRevisionMode ||
+                            isUnscheduledMode
+                            ? showFixedDateInformation
                             : pickDate,
                         selectedJobSiteId:
                         selectedJobSiteId,

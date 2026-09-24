@@ -205,14 +205,39 @@ class _DopListPageState extends ConsumerState<DopListPage> {
                       children: [
                         ElevatedButton.icon(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.orangeAccent,
+                            backgroundColor:
+                            Colors.orangeAccent,
                             foregroundColor: Colors.black,
                           ),
                           onPressed: () {
                             context.go('/dop-request');
                           },
                           icon: const Icon(Icons.add),
-                          label: const Text('Request Form'),
+                          label:
+                          const Text('Request Form'),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor:
+                            const Color(0xFFDC2919),
+                            foregroundColor: Colors.white,
+                          ),
+                          onPressed: () {
+                            context.go(
+                              '/dop-request',
+                              extra: {
+                                'isUnscheduledMode': true,
+                              },
+                            );
+                          },
+                          icon: const Icon(
+                            Icons.warning_amber_outlined,
+                            size: 18,
+                          ),
+                          label: const Text(
+                            'Unscheduled Form',
+                          ),
                         ),
                         const SizedBox(width: 10),
                         OutlinedButton.icon(
