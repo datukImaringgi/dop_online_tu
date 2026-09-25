@@ -60,6 +60,140 @@ class DashboardComplianceRow {
   }
 }
 
+class DashboardUnscheduledCounter {
+  int scheduledItems;
+  int unscheduledItems;
+
+  DashboardUnscheduledCounter({
+    this.scheduledItems = 0,
+    this.unscheduledItems = 0,
+  });
+}
+
+class DashboardUnscheduledRow {
+  final String companyName;
+  final int scheduledItems;
+  final int unscheduledItems;
+
+  const DashboardUnscheduledRow({
+    required this.companyName,
+    required this.scheduledItems,
+    required this.unscheduledItems,
+  });
+
+  int get totalItems {
+    return scheduledItems +
+        unscheduledItems;
+  }
+
+  double get scheduledPercentage {
+    if (totalItems == 0) {
+      return 0;
+    }
+
+    return scheduledItems /
+        totalItems *
+        100;
+  }
+
+  String get scheduledPercentageText {
+    final percentage =
+        scheduledPercentage;
+
+    if (percentage ==
+        percentage.roundToDouble()) {
+      return '${percentage.toStringAsFixed(0)}%';
+    }
+
+    return '${percentage.toStringAsFixed(1)}%';
+  }
+}
+
+class DashboardUnscheduledCalculation {
+  final List<DashboardUnscheduledRow> rows;
+
+  const DashboardUnscheduledCalculation({
+    required this.rows,
+  });
+
+  factory DashboardUnscheduledCalculation
+      .calculate({
+    required List<DopListItemModel> dopItems,
+  }) {
+    final counters = <
+        String,
+        DashboardUnscheduledCounter>{};
+
+    for (final item in dopItems) {
+      final status =
+      item.status.trim().toLowerCase();
+
+      if (status == 'draft' ||
+          status == 'cancelled') {
+        continue;
+      }
+
+      final companyName =
+      item.companyName.trim();
+
+      if (companyName.isEmpty ||
+          companyName == '-') {
+        continue;
+      }
+
+      final dopType =
+      item.dopType.trim().toLowerCase();
+
+      final counter =
+      counters.putIfAbsent(
+        companyName,
+        DashboardUnscheduledCounter.new,
+      );
+
+      if (dopType == 'unscheduled') {
+        counter.unscheduledItems++;
+        continue;
+      }
+
+      if (dopType == 'scheduled') {
+        counter.scheduledItems++;
+      }
+    }
+
+    final companyNames =
+    counters.keys.toList();
+
+    companyNames.sort();
+
+    final rows =
+    <DashboardUnscheduledRow>[];
+
+    for (final companyName
+    in companyNames) {
+      final counter =
+      counters[companyName];
+
+      if (counter == null) {
+        continue;
+      }
+
+      rows.add(
+        DashboardUnscheduledRow(
+          companyName: companyName,
+          scheduledItems:
+          counter.scheduledItems,
+          unscheduledItems:
+          counter.unscheduledItems,
+        ),
+      );
+    }
+
+    return DashboardUnscheduledCalculation(
+      rows: rows,
+    );
+  }
+}
+
 class DashboardTransportAreaCounter {
   int massal;
   int nonMassal;

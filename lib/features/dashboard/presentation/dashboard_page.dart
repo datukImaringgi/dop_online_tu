@@ -11,6 +11,7 @@ import 'widgets/dashboard_transport_area.dart';
 import 'widgets/dashboard_compliance.dart';
 import 'widgets/dashboard_filters.dart';
 import 'widgets/dashboard_unit_availability.dart';
+import 'widgets/dashboard_unscheduled_monitoring.dart';
 
 class DashboardPage
     extends ConsumerStatefulWidget {
@@ -313,6 +314,11 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
       dopItems: filteredDopItems,
     );
 
+    final unscheduledCalculation =
+    DashboardUnscheduledCalculation.calculate(
+      dopItems: filteredDopItems,
+    );
+
     final metrics = calculation.metrics;
 
     final incompleteCount = metrics.incomplete;
@@ -329,6 +335,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     final siteRows = transportAreaCalculation.siteRows;
 
     final complianceRows = calculation.complianceRows;
+    final unscheduledRows = unscheduledCalculation.rows;
     final totalDop = metrics.totalDop;
     final approvedCount = metrics.approved;
     final rejectedCount = metrics.rejected;
@@ -434,8 +441,25 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                       child: DashboardComplianceCard(rows: complianceRows)
                   ),
                   const SizedBox(width: 16),
-                  const Expanded(
-                    child: DashboardUnitAvailabilityCard(),
+                  Expanded(
+                    child: DashboardUnscheduledMonitoringCard(
+                      rows: unscheduledRows,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              const Row(
+                crossAxisAlignment:
+                CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child:
+                    DashboardUnitAvailabilityCard(),
+                  ),
+                  SizedBox(width: 16),
+                  Expanded(
+                    child: SizedBox.shrink(),
                   ),
                 ],
               ),

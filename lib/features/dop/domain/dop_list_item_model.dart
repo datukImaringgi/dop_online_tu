@@ -1,5 +1,6 @@
 class DopListItemModel {
   final String dopNumber;
+  final String dopType;
   final String detailId;
   final String dopHeaderId;
   final String companyId;
@@ -49,6 +50,7 @@ class DopListItemModel {
 
   DopListItemModel({
     required this.dopNumber,
+    required this.dopType,
     required this.detailId,
     required this.dopHeaderId,
     required this.companyId,
@@ -93,6 +95,10 @@ class DopListItemModel {
   factory DopListItemModel.fromMap(Map<String, dynamic> map) {
     return DopListItemModel(
       dopNumber: map['dop_number'] as String? ?? '-',
+      dopType:
+      map['dop_type'] ?.toString()
+          .trim()
+          .toLowerCase() ?? 'scheduled',
       detailId: map['detail_id'] as String,
       dopHeaderId: map['dop_header_id'] as String,
       companyId: map['company_id'] as String,
