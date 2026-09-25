@@ -59,7 +59,7 @@ class DashboardUnscheduledMonitoringCard
       children: [
         const Expanded(
           child: Text(
-            'Unscheduled Activity KPI',
+            'Scheduled Activity KPI',
             style: TextStyle(
               color: Color(0xFF0F172A),
               fontSize: 13,
