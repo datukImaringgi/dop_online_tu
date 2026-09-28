@@ -14,6 +14,9 @@ import 'widgets/dop_revision_form_loader.dart';
 import '../data/dop_revision_list_provider.dart';
 import '../../approval/data/dop_approval_provider.dart';
 import '../data/dop_revision_repository.dart';
+import '../data/dop_excel_import_repository.dart';
+import 'widgets/dop_excel_import_button.dart';
+import 'widgets/dop_excel_import_preview_dialog.dart';
 
 class DopRequestPage
     extends ConsumerStatefulWidget {
@@ -305,6 +308,8 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
 
   bool isSubmitting = false;
   bool isSavingDraft = false;
+  bool isImportingExcel = false;
+
   String? activeDraftHeaderId;
 
   bool get isRevisionMode {
@@ -497,6 +502,201 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
     });
 
     showMessage('Aktivitas berhasil dihapus');
+  }
+
+  Future<void> downloadExcelTemplate() async {
+    if (isImportingExcel) {
+      return;
+    }
+
+    setState(() {
+      isImportingExcel = true;
+    });
+
+    try {
+      final repository =
+      DopExcelImportRepository();
+
+      await repository.downloadTemplate();
+
+      if (!mounted) {
+        return;
+      }
+
+      showMessage(
+        'Template Import Aktivitas '
+            'berhasil didownload.',
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      showMessage(
+        extractSubmissionError(error),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          isImportingExcel = false;
+        });
+      }
+    }
+  }
+
+  Future<void> uploadExcelTemplate() async {
+    if (isImportingExcel ||
+        isSubmitting ||
+        isSavingDraft) {
+      return;
+    }
+
+    final jobSiteId =
+    selectedJobSiteId?.trim();
+
+    if (jobSiteId == null ||
+        jobSiteId.isEmpty) {
+      showMessage(
+        'Pilih Job Site terlebih dahulu '
+            'sebelum upload template Excel.',
+      );
+      return;
+    }
+
+    final units =
+        ref.read(unitsProvider).value;
+
+    final drivers =
+        ref.read(driversProvider).value;
+
+    final routes =
+        ref.read(routesProvider).value;
+
+    final jsaProcedures =
+        ref.read(jsaProceduresProvider).value;
+
+    final controlRooms =
+        ref.read(controlRoomsProvider).value;
+
+    final employees =
+        ref.read(employeeOptionsProvider).value;
+
+    if (units == null ||
+        drivers == null ||
+        routes == null ||
+        jsaProcedures == null ||
+        controlRooms == null ||
+        employees == null) {
+      showMessage(
+        'Master data belum selesai dimuat. '
+            'Silakan coba kembali.',
+      );
+      return;
+    }
+
+    setState(() {
+      isImportingExcel = true;
+    });
+
+    try {
+      final repository =
+      DopExcelImportRepository();
+
+      final parsedFile =
+      await repository.pickAndReadTemplate();
+
+      if (parsedFile == null) {
+        return;
+      }
+
+      final importResult =
+      repository.validateAndConvert(
+        parsedFile: parsedFile,
+        jobSiteId: jobSiteId,
+        units: units,
+        drivers: drivers,
+        routes: routes,
+        jsaProcedures: jsaProcedures,
+        controlRooms: controlRooms,
+        employees: employees,
+        existingActivities: activityDrafts,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      final shouldImport =
+      await DopExcelImportPreviewDialog.show(
+        context: context,
+        result: importResult,
+      );
+
+      if (!shouldImport ||
+          !importResult.canImport) {
+        return;
+      }
+
+      final importedLayers =
+          importResult.importedLayers;
+
+      if (importedLayers == null) {
+        showMessage(
+          'Data Layer hasil import '
+              'tidak ditemukan.',
+        );
+        return;
+      }
+
+      setState(() {
+        activityDrafts.addAll(
+          importResult.validActivities,
+        );
+
+        selectedLayer1UserId =
+            importedLayers.layer1UserId;
+
+        selectedLayer2UserId =
+            importedLayers.layer2UserId;
+
+        selectedLayer3UserId =
+            importedLayers.layer3UserId;
+
+        selectedLayer4UserId =
+            importedLayers.layer4UserId;
+
+        layer1Controller.text =
+            importedLayers.layer1Name;
+
+        layer2Controller.text =
+            importedLayers.layer2Name;
+
+        layer3Controller.text =
+            importedLayers.layer3Name;
+
+        layer4Controller.text =
+            importedLayers.layer4Name;
+      });
+
+      showMessage(
+        '${importResult.validRowCount} '
+            'aktivitas berhasil diimport.',
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      showMessage(
+        extractSubmissionError(error),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          isImportingExcel = false;
+        });
+      }
+    }
   }
 
   Future<void> saveCurrentDraft() async {
@@ -1948,7 +2148,9 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
 
                   OutlinedButton.icon(
                     onPressed:
-                    isSubmitting || isSavingDraft
+                    isSubmitting ||
+                        isSavingDraft ||
+                        isImportingExcel
                         ? null
                         : () {
                       if (isRevisionMode) {
@@ -1985,12 +2187,24 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
                   ),
 
                   const SizedBox(width: 8),
+                  DopExcelImportButton(
+                    isProcessing: isImportingExcel,
+                    isEnabled:
+                    !isSubmitting &&
+                        !isSavingDraft,
+                    onDownloadTemplate:
+                    downloadExcelTemplate,
+                    onUploadTemplate:
+                    uploadExcelTemplate,
+                  ),
+                  const SizedBox(width: 8),
                   if (!isRevisionMode &&
                       !isUnscheduledMode) ...[
                     OutlinedButton.icon(
                       onPressed:
                       isSubmitting ||
                           isSavingDraft ||
+                          isImportingExcel ||
                           activityDrafts.isEmpty
                           ? null
                           : saveCurrentDraft,
@@ -2046,6 +2260,7 @@ class _DopRequestPageState extends ConsumerState<DopRequestPage> {
                     onPressed:
                     isSubmitting ||
                         isSavingDraft ||
+                        isImportingExcel ||
                         activityDrafts.isEmpty ||
                         (isRevisionMode &&
                             !hasAppliedRevisionData)
