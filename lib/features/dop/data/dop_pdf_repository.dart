@@ -4,6 +4,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/foundation.dart';
+import 'dart:html' as html;
 
 import '../domain/dop_list_item_model.dart';
 import '../../../shared/providers/supabase_provider.dart';
@@ -25,6 +26,38 @@ class DopPdfRepository {
   const DopPdfRepository({
     required this.supabase,
   });
+
+  void _downloadPdfInBrowser({
+    required List<int> bytes,
+    required String fileName,
+  }) {
+    final blob = html.Blob(
+      <Object>[bytes],
+      'application/pdf',
+    );
+
+    final objectUrl =
+    html.Url.createObjectUrlFromBlob(
+      blob,
+    );
+
+    final anchor = html.AnchorElement(
+      href: objectUrl,
+    )
+      ..download = fileName
+      ..style.display = 'none';
+
+    html.document.body?.children.add(
+      anchor,
+    );
+
+    anchor.click();
+    anchor.remove();
+
+    html.Url.revokeObjectUrl(
+      objectUrl,
+    );
+  }
 
   Future<DopPdfApprovalMetadata>
   loadApprovalMetadata({
@@ -372,9 +405,9 @@ class DopPdfRepository {
       '_',
     );
 
-    await Printing.sharePdf(
+    _downloadPdfInBrowser(
       bytes: bytes,
-      filename: 'DOP-$safeNumber.pdf',
+      fileName: 'DOP-$safeNumber.pdf',
     );
   }
 
