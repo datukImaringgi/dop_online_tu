@@ -3,6 +3,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter/foundation.dart';
 
 import '../domain/dop_list_item_model.dart';
 import '../../../shared/providers/supabase_provider.dart';
@@ -245,6 +246,22 @@ class DopPdfRepository {
     return DateTime.tryParse(text);
   }
 
+  Future<pw.ImageProvider?> _loadPdfLogo() async {
+    try {
+      return await networkImage(
+        'https://edtuzimhejrluwljkihb.supabase.co/'
+            'storage/v1/object/public/public-assets/'
+            'logos/berau_coal_logo.jpg',
+      );
+    } catch (error) {
+      debugPrint(
+        'Logo PDF gagal dimuat: $error',
+      );
+
+      return null;
+    }
+  }
+
   Future<void> downloadDopPdf({
     required DopListItemModel headerItem,
     required List<DopListItemModel> activities,
@@ -269,9 +286,7 @@ class DopPdfRepository {
 
     final printedAt = DateTime.now();
 
-    final logo = await imageFromAssetBundle(
-      'assets/images/berau_coal_logo.jpg',
-    );
+    final logo = await _loadPdfLogo();
 
     final document = pw.Document(
       title: headerItem.dopNumber,
@@ -365,7 +380,7 @@ class DopPdfRepository {
 
   pw.Widget _buildHeader(
       DopListItemModel item,
-      pw.ImageProvider logo,
+      pw.ImageProvider? logo,
       ) {
     return pw.Container(
       margin: const pw.EdgeInsets.only(
@@ -406,27 +421,28 @@ class DopPdfRepository {
               ),
             ],
           ),
-          pw.Container(
-            padding: const pw.EdgeInsets.symmetric(
-              horizontal: 6,
-              vertical: 5,
-            ),
-            decoration: pw.BoxDecoration(
-              color: PdfColors.white,
-              borderRadius:
-              pw.BorderRadius.circular(5),
-            ),
-            child: pw.ConstrainedBox(
-              constraints: const pw.BoxConstraints(
-                maxWidth: 90,
-                maxHeight: 38,
+          if (logo != null)
+            pw.Container(
+              padding: const pw.EdgeInsets.symmetric(
+                horizontal: 6,
+                vertical: 5,
               ),
-              child: pw.Image(
-                logo,
-                fit: pw.BoxFit.contain,
+              decoration: pw.BoxDecoration(
+                color: PdfColors.white,
+                borderRadius:
+                pw.BorderRadius.circular(5),
+              ),
+              child: pw.ConstrainedBox(
+                constraints: const pw.BoxConstraints(
+                  maxWidth: 90,
+                  maxHeight: 38,
+                ),
+                child: pw.Image(
+                  logo,
+                  fit: pw.BoxFit.contain,
+                ),
               ),
             ),
-          ),
         ],
       ),
     );
