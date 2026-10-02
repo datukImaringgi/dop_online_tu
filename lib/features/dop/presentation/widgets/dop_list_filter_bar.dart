@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../data/dop_list_provider.dart';
+
 class DopListFilterBar extends StatelessWidget {
   final List<String> companyOptions;
   final List<String> siteOptions;
@@ -16,6 +18,13 @@ class DopListFilterBar extends StatelessWidget {
   final String selectedAreaType;
   final String selectedShift;
   final String selectedStatus;
+  final DopListPeriod selectedPeriod;
+  final String customDateRangeLabel;
+
+  final ValueChanged<DopListPeriod>
+  onPeriodChanged;
+
+  final VoidCallback onCustomDateRangeTap;
 
   final ValueChanged<String> onCompanyChanged;
   final ValueChanged<String> onSiteChanged;
@@ -41,7 +50,11 @@ class DopListFilterBar extends StatelessWidget {
     required this.selectedAreaType,
     required this.selectedShift,
     required this.selectedStatus,
+    required this.selectedPeriod,
+    required this.customDateRangeLabel,
     required this.onCompanyChanged,
+    required this.onPeriodChanged,
+    required this.onCustomDateRangeTap,
     required this.onSiteChanged,
     required this.onUnitTypeChanged,
     required this.onUnitNumberChanged,
@@ -82,6 +95,9 @@ class DopListFilterBar extends StatelessWidget {
       spacing: 8,
       runSpacing: 8,
       children: [
+        buildPeriodField(
+          width: fieldWidth,
+        ),
         buildFieldBox(
           width: fieldWidth,
           label: 'Perusahaan',
@@ -142,7 +158,7 @@ class DopListFilterBar extends StatelessWidget {
       return availableWidth;
     }
 
-    return (availableWidth - 48) / 7;
+    return (availableWidth - 56) / 8;
   }
 
   Widget buildFieldBox({
@@ -161,6 +177,97 @@ class DopListFilterBar extends StatelessWidget {
         items: items,
         onChanged: onChanged,
         formatLabel: formatLabel,
+      ),
+    );
+  }
+
+  Widget buildPeriodField({
+    required double width,
+  }) {
+    return SizedBox(
+      width: width,
+      child: DropdownButtonFormField<
+          DopListPeriod>(
+        value: selectedPeriod,
+        isExpanded: true,
+        style: const TextStyle(
+          color: Color(0xFF0F172A),
+          fontSize: 11,
+          height: 1,
+          fontWeight: FontWeight.w500,
+        ),
+        decoration: InputDecoration(
+          labelText: 'Periode',
+          labelStyle: const TextStyle(
+            fontSize: 10,
+            color: Color(0xFF64748B),
+          ),
+          prefixIcon: const Icon(
+            Icons.date_range_outlined,
+            size: 15,
+          ),
+          prefixIconConstraints:
+          const BoxConstraints(
+            minWidth: 30,
+            minHeight: 30,
+          ),
+          isDense: true,
+          filled: true,
+          fillColor: Colors.white,
+          contentPadding:
+          const EdgeInsets.symmetric(
+            horizontal: 8,
+            vertical: 7,
+          ),
+          border: OutlineInputBorder(
+            borderRadius:
+            BorderRadius.circular(7),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius:
+            BorderRadius.circular(7),
+            borderSide: const BorderSide(
+              color: Color(0xFFCBD5E1),
+            ),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius:
+            BorderRadius.circular(7),
+            borderSide: const BorderSide(
+              color: Color(0xFF0D6EFD),
+            ),
+          ),
+        ),
+        items: [
+          for (final period
+          in DopListPeriod.values)
+            DropdownMenuItem<DopListPeriod>(
+              value: period,
+              child: Text(
+                period ==
+                    DopListPeriod.custom &&
+                    customDateRangeLabel
+                        .isNotEmpty
+                    ? customDateRangeLabel
+                    : period.label,
+                maxLines: 1,
+                overflow:
+                TextOverflow.ellipsis,
+              ),
+            ),
+        ],
+        onChanged: (period) {
+          if (period == null) {
+            return;
+          }
+
+          onPeriodChanged(period);
+
+          if (period ==
+              DopListPeriod.custom) {
+            onCustomDateRangeTap();
+          }
+        },
       ),
     );
   }

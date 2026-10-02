@@ -278,7 +278,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   Widget build(
       BuildContext context,
       ) {
-    final dopListAsync = ref.watch(dopListProvider);
+    final dopListAsync = ref.watch(dashboardDopListProvider);
     final companyAccessAsync = ref.watch(currentCompanyAccessProvider);
     final hierarchyAsync = ref.watch(currentHierarchyLayerProvider);
 

@@ -7,6 +7,7 @@ import '../data/dop_list_provider.dart';
 import '../domain/dop_list_item_model.dart';
 import 'widgets/dop_list_filter_bar.dart';
 import '../data/dop_pdf_repository.dart';
+import 'widgets/dop_list_pagination.dart';
 
 class DopListPage extends ConsumerStatefulWidget {
   const DopListPage({super.key});
@@ -28,6 +29,40 @@ class _DopListPageState extends ConsumerState<DopListPage> {
   String dopNumberSearchQuery = '';
   final dopNumberSearchController = TextEditingController();
 
+  String formatFilterDate(
+      DateTime value,
+      ) {
+    final day = value.day
+        .toString()
+        .padLeft(2, '0');
+
+    final month = value.month
+        .toString()
+        .padLeft(2, '0');
+
+    final year = value.year
+        .toString()
+        .padLeft(4, '0');
+
+    return '$day/$month/$year';
+  }
+
+  String buildCustomDateRangeLabel(
+      DopListDateFilter filter,
+      ) {
+    final range = filter.customRange;
+
+    if (filter.period !=
+        DopListPeriod.custom ||
+        range == null) {
+      return '';
+    }
+
+    return '${formatFilterDate(range.from)}'
+        ' - '
+        '${formatFilterDate(range.to)}';
+  }
+
   List<String> _buildOptions(List<String> values) {
     final set = <String>{};
 
@@ -43,10 +78,123 @@ class _DopListPageState extends ConsumerState<DopListPage> {
     return ['Semua', ...result];
   }
 
-  void handleDopNumberSearchChanged(String value) {
+  Future<void>
+  pickCustomDateRange() async {
+    final currentFilter = ref.read(
+      dopListDateFilterProvider,
+    );
+
+    final now = DateTime.now();
+
+    final today = DateTime(
+      now.year,
+      now.month,
+      now.day,
+    );
+
+    final initialRange =
+        currentFilter.customRange;
+
+    final selectedRange =
+    await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(
+        2024,
+        1,
+        1,
+      ),
+      lastDate: DateTime(
+        today.year + 2,
+        12,
+        31,
+      ),
+      initialDateRange:
+      initialRange == null
+          ? DateTimeRange(
+        start: today,
+        end: today,
+      )
+          : DateTimeRange(
+        start:
+        initialRange.from,
+        end:
+        initialRange.to,
+      ),
+      helpText:
+      'Pilih Periode DOP',
+      cancelText: 'Batal',
+      confirmText: 'Terapkan',
+      saveText: 'Terapkan',
+      fieldStartHintText:
+      'Tanggal awal',
+      fieldEndHintText:
+      'Tanggal akhir',
+    );
+
+    if (selectedRange == null) {
+      if (currentFilter.customRange ==
+          null) {
+        ref
+            .read(
+          dopListDateFilterProvider
+              .notifier,
+        )
+            .setPeriod(
+          DopListPeriod.today,
+        );
+      }
+
+      return;
+    }
+
+    resetPagination();
+
+    ref
+        .read(
+      dopListDateFilterProvider
+          .notifier,
+    )
+        .setCustomRange(
+      from: selectedRange.start,
+      to: selectedRange.end,
+    );
+  }
+
+  void handleDopNumberSearchChanged(
+      String value,
+      ) {
+    resetPagination();
+
     setState(() {
-      dopNumberSearchQuery = normalizeSearchText(value);
+      dopNumberSearchQuery =
+          normalizeSearchText(value);
     });
+  }
+
+  void handlePageChanged(int page) {
+    ref
+        .read(
+      dopListPaginationProvider.notifier,
+    )
+        .goToPage(page);
+  }
+
+  void handleRowsPerPageChanged(
+      int rowsPerPage,
+      ) {
+    ref
+        .read(
+      dopListPaginationProvider.notifier,
+    )
+        .setRowsPerPage(rowsPerPage);
+  }
+
+  void resetPagination() {
+    ref
+        .read(
+      dopListPaginationProvider.notifier,
+    )
+        .reset();
   }
 
   void clearDopNumberSearch() {
@@ -72,6 +220,14 @@ class _DopListPageState extends ConsumerState<DopListPage> {
 
   @override
   Widget build(BuildContext context) {
+    final dateFilter = ref.watch(
+      dopListDateFilterProvider,
+    );
+
+    final customDateRangeLabel =
+    buildCustomDateRangeLabel(
+      dateFilter,
+    );
     final dopListAsync = ref.watch(dopListProvider);
 
     return Scaffold(
@@ -90,7 +246,8 @@ class _DopListPageState extends ConsumerState<DopListPage> {
               style: const TextStyle(color: Colors.red),
             );
           },
-          data: (items) {
+          data: (queryResult) {
+            final items = queryResult.items;
             final companyOptions = _buildOptions(
               items.map((item) => item.companyName).toList(),
             );
@@ -335,42 +492,76 @@ class _DopListPageState extends ConsumerState<DopListPage> {
                   selectedAreaType: selectedAreaType,
                   selectedShift: selectedShift,
                   selectedStatus: selectedStatus,
+                  selectedPeriod:
+                  dateFilter.period,
+                  customDateRangeLabel:
+                  customDateRangeLabel,
 
                   onCompanyChanged: (value) {
+                    resetPagination();
+
                     setState(() {
                       selectedCompany = value;
                     });
                   },
                   onSiteChanged: (value) {
+                    resetPagination();
+
                     setState(() {
                       selectedSite = value;
                     });
                   },
                   onUnitTypeChanged: (value) {
+                    resetPagination();
+
                     setState(() {
                       selectedUnitType = value;
                     });
                   },
                   onUnitNumberChanged: (value) {
+                    resetPagination();
+
                     setState(() {
                       selectedUnitNumber = value;
                     });
                   },
                   onAreaTypeChanged: (value) {
+                    resetPagination();
+
                     setState(() {
                       selectedAreaType = value;
                     });
                   },
                   onShiftChanged: (value) {
+                    resetPagination();
+
                     setState(() {
                       selectedShift = value;
                     });
                   },
                   onStatusChanged: (value) {
+                    resetPagination();
+
                     setState(() {
                       selectedStatus = value;
                     });
                   },
+                  onPeriodChanged: (period) {
+                    if (period ==
+                        DopListPeriod.custom) {
+                      return;
+                    }
+
+                    resetPagination();
+
+                    ref
+                        .read(
+                      dopListDateFilterProvider.notifier,
+                    )
+                        .setPeriod(period);
+                  },
+                  onCustomDateRangeTap:
+                  pickCustomDateRange,
                 ),
 
                 const SizedBox(height: 12),
@@ -379,78 +570,108 @@ class _DopListPageState extends ConsumerState<DopListPage> {
                   child: Card(
                     elevation: 0,
                     color: Colors.white,
+                    clipBehavior: Clip.antiAlias,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius:
+                      BorderRadius.circular(16),
                       side: const BorderSide(
                         color: Color(0xFFE2E8F0),
                       ),
                     ),
-                    child: items.isEmpty
-                        ? const Center(
-                      child: Text(
-                        'Belum ada data DOP.',
-                        style: TextStyle(
-                          color: Color(0xFF64748B),
-                        ),
-                      ),
-                    )
-                : filteredItems.isEmpty
-                      ? const Center(
-                      child: Text(
-                        'Tidak ada data sesuai filter.',
-                        style: TextStyle(
-                          color: Color(0xFF64748B),
-                        ),
-                      ),
-                    ): _DopDataTable(
-                      items: filteredItems,
-                      onContinueDraft: (
-                          DopListItemModel item,
-                          ) {
-                        context.go(
-                          '/dop-request',
-                          extra: {
-                            'draftDopHeaderId':
-                            item.dopHeaderId,
-                          },
-                        );
-                      },
-                      onDownloadPdf: (
-                          DopListItemModel item,
-                          ) async {
-                        final activities =
-                        items.where((row) {
-                          return row.dopHeaderId ==
-                              item.dopHeaderId;
-                        }).toList();
-                        try {
-                          await ref
-                              .read(
-                            dopPdfRepositoryProvider,
-                          )
-                              .downloadDopPdf(
-                            headerItem: item,
-                            activities: activities,
-                          );
-                        } catch (error) {
-                          if (!context.mounted) {
-                            return;
-                          }
-                          ScaffoldMessenger.of(context)
-                              .showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                error
-                                    .toString()
-                                    .replaceFirst(
-                                  'Exception: ',
-                                  '',
-                                ),
+                    child: Column(
+                      children: [
+                        Expanded(
+                          child: items.isEmpty
+                              ? Center(
+                            child: Text(
+                              dateFilter.period ==
+                                  DopListPeriod.custom
+                                  ? 'Tidak ada data DOP '
+                                  'pada rentang tanggal '
+                                  'yang dipilih.'
+                                  : 'Tidak ada data DOP '
+                                  'untuk periode '
+                                  '${dateFilter.period.label}.',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                color: Color(0xFF64748B),
                               ),
                             ),
-                          );
-                        }
-                      },
+                          )
+                              : filteredItems.isEmpty
+                              ? const Center(
+                            child: Text(
+                              'Tidak ada data sesuai filter.',
+                              style: TextStyle(
+                                color: Color(0xFF64748B),
+                              ),
+                            ),
+                          )
+                              : _DopDataTable(
+                            items: filteredItems,
+                            onContinueDraft: (
+                                DopListItemModel item,
+                                ) {
+                              context.go(
+                                '/dop-request',
+                                extra: {
+                                  'draftDopHeaderId':
+                                  item.dopHeaderId,
+                                },
+                              );
+                            },
+                            onDownloadPdf: (
+                                DopListItemModel item,
+                                ) async {
+                              try {
+                                await ref
+                                    .read(
+                                  dopPdfRepositoryProvider,
+                                )
+                                    .downloadDopPdf(
+                                  headerItem: item,
+                                );
+                              } catch (error) {
+                                if (!context.mounted) {
+                                  return;
+                                }
+
+                                ScaffoldMessenger.of(context)
+                                    .showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      error
+                                          .toString()
+                                          .replaceFirst(
+                                        'Exception: ',
+                                        '',
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }
+                            },
+                          ),
+                        ),
+                        DopListPagination(
+                          currentPage:
+                          queryResult.currentPage,
+                          totalPages:
+                          queryResult.totalPages,
+                          totalItems:
+                          queryResult.totalItems,
+                          firstItemNumber:
+                          queryResult.firstItemNumber,
+                          lastItemNumber:
+                          queryResult.lastItemNumber,
+                          rowsPerPage:
+                          queryResult.rowsPerPage,
+                          onPageChanged:
+                          handlePageChanged,
+                          onRowsPerPageChanged:
+                          handleRowsPerPageChanged,
+                        ),
+                      ],
                     ),
                   ),
                 ),

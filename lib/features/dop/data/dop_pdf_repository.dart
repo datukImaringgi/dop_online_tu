@@ -295,26 +295,106 @@ class DopPdfRepository {
     }
   }
 
-  Future<void> downloadDopPdf({
-    required DopListItemModel headerItem,
-    required List<DopListItemModel> activities,
+  Future<List<DopListItemModel>>
+  _loadDopActivities({
+    required String dopHeaderId,
   }) async {
-    if (headerItem.status == 'draft') {
+    final cleanedHeaderId =
+    dopHeaderId.trim();
+
+    if (cleanedHeaderId.isEmpty) {
       throw Exception(
-        'Draft belum dapat diunduh sebagai PDF DOP resmi.',
+        'ID Header DOP tidak valid.',
       );
     }
 
-    if (activities.isEmpty) {
+    final response = await supabase
+        .from('v_dop_list')
+        .select()
+        .eq(
+      'dop_header_id',
+      cleanedHeaderId,
+    )
+        .order(
+      'start_time',
+      ascending: true,
+    );
+
+    final rawItems =
+    response as List<dynamic>;
+
+    if (rawItems.isEmpty) {
       throw Exception(
         'Aktivitas DOP tidak ditemukan.',
       );
     }
 
+    final activities =
+    <DopListItemModel>[];
+
+    for (final rawItem in rawItems) {
+      activities.add(
+        DopListItemModel.fromMap(
+          Map<String, dynamic>.from(
+            rawItem as Map,
+          ),
+        ),
+      );
+    }
+
+    activities.sort((
+        DopListItemModel first,
+        DopListItemModel second,
+        ) {
+      final startTimeComparison =
+      first.startTime.compareTo(
+        second.startTime,
+      );
+
+      if (startTimeComparison != 0) {
+        return startTimeComparison;
+      }
+
+      final endTimeComparison =
+      first.endTime.compareTo(
+        second.endTime,
+      );
+
+      if (endTimeComparison != 0) {
+        return endTimeComparison;
+      }
+
+      return first.unitNumber.compareTo(
+        second.unitNumber,
+      );
+    });
+
+    return activities;
+  }
+
+  Future<void> downloadDopPdf({
+    required DopListItemModel headerItem,
+  }) async {
+    if (headerItem.status == 'draft') {
+      throw Exception(
+        'Draft belum dapat diunduh '
+            'sebagai PDF DOP resmi.',
+      );
+    }
+
+    final activities =
+    await _loadDopActivities(
+      dopHeaderId:
+      headerItem.dopHeaderId,
+    );
+
+    final completeHeaderItem =
+        activities.first;
+
     final approvalMetadata =
     await loadApprovalMetadata(
       dopHeaderId:
-      headerItem.dopHeaderId,
+      completeHeaderItem.dopHeaderId,
     );
 
     final printedAt = DateTime.now();
@@ -322,7 +402,7 @@ class DopPdfRepository {
     final logo = await _loadPdfLogo();
 
     final document = pw.Document(
-      title: headerItem.dopNumber,
+      title: completeHeaderItem.dopNumber,
       author: 'DOP Online',
       creator: 'DOP Online',
     );
@@ -333,7 +413,7 @@ class DopPdfRepository {
         margin: const pw.EdgeInsets.all(24),
         header: (context) {
           return _buildHeader(
-            headerItem,
+            completeHeaderItem,
             logo,
           );
         },
@@ -369,7 +449,7 @@ class DopPdfRepository {
         build: (context) {
           return [
             _buildInformation(
-              headerItem,
+              completeHeaderItem,
               activities.length,
             ),
             pw.SizedBox(height: 14),
@@ -385,11 +465,11 @@ class DopPdfRepository {
             _buildActivityTable(activities),
             pw.SizedBox(height: 14),
             _buildLayerInformation(
-              headerItem,
+              completeHeaderItem,
             ),
             pw.SizedBox(height: 10),
             _buildApprovalInformation(
-              headerItem,
+              completeHeaderItem,
               approvalMetadata,
             ),
           ];
@@ -399,7 +479,7 @@ class DopPdfRepository {
 
     final bytes = await document.save();
 
-    final safeNumber = headerItem.dopNumber
+    final safeNumber = completeHeaderItem.dopNumber
         .replaceAll(
       RegExp(r'[^A-Za-z0-9_-]'),
       '_',
