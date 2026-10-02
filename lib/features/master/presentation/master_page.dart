@@ -28,6 +28,7 @@ class _MasterPageState
     extends ConsumerState<MasterPage> {
   int selectedMenuIndex = 0;
   String? selectedFilterCompanyId;
+  int? selectedFilterHierarchyLayer;
 
   OperationalMasterConfig?
   getSelectedOperationalConfig() {
@@ -66,26 +67,34 @@ class _MasterPageState
     });
   }
 
+  void handleHierarchyFilterChanged(
+      int? hierarchyLayer,
+      ) {
+    setState(() {
+      selectedFilterHierarchyLayer =
+          hierarchyLayer;
+    });
+  }
+
   List<CompanyUserHierarchyModel>
-  filterUsersByCompany(
+  filterUsers(
       List<CompanyUserHierarchyModel> users,
       ) {
-    final companyId = selectedFilterCompanyId;
+    return users.where((user) {
+      final matchesCompany =
+          selectedFilterCompanyId == null ||
+              user.companyId ==
+                  selectedFilterCompanyId;
 
-    if (companyId == null) {
-      return users;
-    }
+      final matchesLayer =
+          selectedFilterHierarchyLayer ==
+              null ||
+              user.hierarchyLayer ==
+                  selectedFilterHierarchyLayer;
 
-    final filteredUsers =
-    <CompanyUserHierarchyModel>[];
-
-    for (final user in users) {
-      if (user.companyId == companyId) {
-        filteredUsers.add(user);
-      }
-    }
-
-    return filteredUsers;
+      return matchesCompany &&
+          matchesLayer;
+    }).toList();
   }
 
   List<DropdownMenuItem<String?>>
@@ -177,6 +186,85 @@ class _MasterPageState
             BorderRadius.circular(7),
             borderSide: const BorderSide(
               color: Color(0xFFCBD5E1),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget buildHierarchyFilter() {
+    return SizedBox(
+      width: 150,
+      height: 34,
+      child: DropdownButtonFormField<int?>(
+        value:
+        selectedFilterHierarchyLayer,
+        isExpanded: true,
+        items: const [
+          DropdownMenuItem<int?>(
+            value: null,
+            child: Text('Semua Layer'),
+          ),
+          DropdownMenuItem<int?>(
+            value: 1,
+            child: Text('Layer 1'),
+          ),
+          DropdownMenuItem<int?>(
+            value: 2,
+            child: Text('Layer 2'),
+          ),
+          DropdownMenuItem<int?>(
+            value: 3,
+            child: Text('Layer 3'),
+          ),
+          DropdownMenuItem<int?>(
+            value: 4,
+            child: Text('Layer 4'),
+          ),
+          DropdownMenuItem<int?>(
+            value: 5,
+            child: Text('Layer 5'),
+          ),
+        ],
+        onChanged:
+        handleHierarchyFilterChanged,
+        style: const TextStyle(
+          color: Color(0xFF0F172A),
+          fontSize: 11.5,
+          fontWeight: FontWeight.w500,
+        ),
+        decoration: InputDecoration(
+          labelText: 'Layer',
+          labelStyle: const TextStyle(
+            color: Color(0xFF64748B),
+            fontSize: 10,
+          ),
+          isDense: true,
+          filled: true,
+          fillColor: Colors.white,
+          contentPadding:
+          const EdgeInsets.symmetric(
+            horizontal: 10,
+            vertical: 7,
+          ),
+          border: OutlineInputBorder(
+            borderRadius:
+            BorderRadius.circular(7),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius:
+            BorderRadius.circular(7),
+            borderSide: const BorderSide(
+              color: Color(0xFFCBD5E1),
+            ),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius:
+            BorderRadius.circular(7),
+            borderSide: const BorderSide(
+              color: Color(0xFF2563EB),
+              width: 1.3,
             ),
           ),
         ),
@@ -704,9 +792,7 @@ class _MasterPageState
     final isLayerFive =
         currentHierarchyLayer == 5;
 
-    final displayedUsers = isLayerFive
-        ? filterUsersByCompany(users)
-        : users;
+    final displayedUsers = filterUsers(users);
 
     return Card(
       margin: EdgeInsets.zero,
@@ -747,22 +833,22 @@ class _MasterPageState
                   ),
                 ),
                 const SizedBox(width: 8),
-                const Expanded(
-                  child: Text(
-                    'User & Hierarchy',
-                    style: TextStyle(
-                      color: Color(0xFF0F172A),
-                      fontSize: 13,
-                      height: 1.1,
-                      fontWeight:
-                      FontWeight.w700,
-                    ),
+                const Text(
+                  'User & Hierarchy',
+                  style: TextStyle(
+                    color: Color(0xFF0F172A),
+                    fontSize: 13,
+                    height: 1.1,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
+                const SizedBox(width: 16),
                 if (isLayerFive) ...[
                   buildCompanyFilter(users),
                   const SizedBox(width: 8),
                 ],
+                buildHierarchyFilter(),
+                const Spacer(),
                 OutlinedButton.icon(
                   onPressed: () {
                     ref.invalidate(
@@ -850,7 +936,13 @@ class _MasterPageState
           ),
           Expanded(
             child: displayedUsers.isEmpty
-                ? _buildEmptyState()
+                ? _buildEmptyState(
+              hasActiveFilter:
+              selectedFilterCompanyId !=
+                  null ||
+                  selectedFilterHierarchyLayer !=
+                      null,
+            )
                 : _UserHierarchyTable(
               users: displayedUsers,
               onEdit: (
@@ -868,32 +960,41 @@ class _MasterPageState
     );
   }
 
-  Widget _buildEmptyState() {
-    return const Center(
+  Widget _buildEmptyState({
+    bool hasActiveFilter = false,
+  }) {
+    return Center(
       child: Padding(
-        padding: EdgeInsets.all(24),
+        padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
+            const Icon(
               Icons.manage_accounts_outlined,
               size: 42,
               color: Color(0xFF94A3B8),
             ),
-            SizedBox(height: 10),
+            const SizedBox(height: 10),
             Text(
-              'Belum ada data user',
-              style: TextStyle(
+              hasActiveFilter
+                  ? 'Data user tidak ditemukan'
+                  : 'Belum ada data user',
+              style: const TextStyle(
                 color: Color(0xFF334155),
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            SizedBox(height: 4),
+            const SizedBox(height: 4),
             Text(
-                'Klik Tambah User untuk mendaftarkan user baru.',
+              hasActiveFilter
+                  ? 'Tidak ada user yang sesuai '
+                  'dengan filter Perusahaan '
+                  'dan Layer.'
+                  : 'Klik Tambah User untuk '
+                  'mendaftarkan user baru.',
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 color: Color(0xFF64748B),
                 fontSize: 12,
               ),

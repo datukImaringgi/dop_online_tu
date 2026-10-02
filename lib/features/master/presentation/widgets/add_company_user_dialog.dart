@@ -712,7 +712,7 @@ class _AddCompanyUserDialogState
       ),
       decoration: buildInputDecoration(
         label: 'Password Sementara',
-        hint: 'Minimal 8 karakter',
+        hint: 'Minimal 6 karakter',
         icon: Icons.lock_outline,
         suffixIcon: IconButton(
           onPressed: handlePasswordVisibility,
