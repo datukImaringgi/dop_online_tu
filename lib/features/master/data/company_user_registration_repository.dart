@@ -106,9 +106,9 @@ class CompanyUserRegistrationRepository {
       );
     }
 
-    if (password.length < 4) {
+    if (password.length < 6) {
       throw Exception(
-        'Password minimal 4 karakter.',
+        'Password minimal 6 karakter.',
       );
     }
 

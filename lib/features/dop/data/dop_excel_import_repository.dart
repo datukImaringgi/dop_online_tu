@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'package:excel/excel.dart';
-import 'package:file_picker/file_picker.dart';
+import 'dart:async';
+import 'dart:html' as html;
 
 import '../domain/dop_activity_draft.dart';
 import '../domain/dop_excel_import_result.dart';
@@ -69,47 +70,106 @@ class DopExcelImportRepository {
 
   Future<DopExcelParsedFile?>
   pickAndReadTemplate() async {
-    final result =
-    await FilePicker.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: const [
-        'xlsx',
-      ],
-      allowMultiple: false,
-      withData: true,
-    );
+    final completer =
+    Completer<DopExcelParsedFile?>();
 
-    if (result == null ||
-        result.files.isEmpty) {
-      return null;
-    }
+    final input =
+    html.FileUploadInputElement()
+      ..accept = '.xlsx'
+      ..multiple = false;
 
-    final selectedFile =
-        result.files.single;
+    input.onChange.first.then((_) {
+      final files = input.files;
 
-    final extension =
-    selectedFile.extension
-        ?.trim()
-        .toLowerCase();
+      if (files == null ||
+          files.isEmpty) {
+        if (!completer.isCompleted) {
+          completer.complete(null);
+        }
 
-    if (extension != 'xlsx') {
-      throw Exception(
-        'File wajib menggunakan format XLSX.',
+        return;
+      }
+
+      final selectedFile = files.first;
+
+      final normalizedFileName =
+      selectedFile.name
+          .trim()
+          .toLowerCase();
+
+      if (!normalizedFileName.endsWith(
+        '.xlsx',
+      )) {
+        if (!completer.isCompleted) {
+          completer.completeError(
+            Exception(
+              'File wajib menggunakan '
+                  'format XLSX.',
+            ),
+          );
+        }
+
+        return;
+      }
+
+      final reader =
+      html.FileReader();
+
+      reader.onError.first.then((_) {
+        if (!completer.isCompleted) {
+          completer.completeError(
+            Exception(
+              'File Excel tidak dapat dibaca.',
+            ),
+          );
+        }
+      });
+
+      reader.onLoadEnd.first.then((_) {
+        try {
+          final result = reader.result;
+
+          if (result is! List<int>) {
+            throw Exception(
+              'Isi file Excel tidak valid.',
+            );
+          }
+
+          final bytes =
+          Uint8List.fromList(result);
+
+          if (bytes.isEmpty) {
+            throw Exception(
+              'File Excel kosong.',
+            );
+          }
+
+          final parsedFile =
+          readTemplateBytes(
+            fileName: selectedFile.name,
+            bytes: bytes,
+          );
+
+          if (!completer.isCompleted) {
+            completer.complete(
+              parsedFile,
+            );
+          }
+        } catch (error) {
+          if (!completer.isCompleted) {
+            completer.completeError(error);
+          }
+        }
+      });
+
+      reader.readAsArrayBuffer(
+        selectedFile,
       );
-    }
+    });
 
-    final bytes = selectedFile.bytes;
+    input.click();
 
-    if (bytes == null || bytes.isEmpty) {
-      throw Exception(
-        'File Excel tidak dapat dibaca.',
-      );
-    }
-
-    return readTemplateBytes(
-      fileName: selectedFile.name,
-      bytes: bytes,
-    );
+    return completer.future;
   }
 
   DopExcelParsedFile readTemplateBytes({
