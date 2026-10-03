@@ -56,7 +56,7 @@ class DopListDateFilterNotifier
   @override
   DopListDateFilter build() {
     return const DopListDateFilter(
-      period: DopListPeriod.today,
+      period: DopListPeriod.thisWeek,
     );
   }
 

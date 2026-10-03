@@ -8,7 +8,10 @@ loadDopApprovalDetails(
     Ref ref,
     String dopHeaderId,
     ) async {
-  if (dopHeaderId.trim().isEmpty) {
+  final cleanedHeaderId =
+  dopHeaderId.trim();
+
+  if (cleanedHeaderId.isEmpty) {
     return <DopListItemModel>[];
   }
 
@@ -16,34 +19,47 @@ loadDopApprovalDetails(
     supabaseProvider,
   );
 
-  final response = await supabase
-      .from('v_dop_list')
-      .select()
-      .eq(
-    'dop_header_id',
-    dopHeaderId,
-  )
-      .order(
-    'start_time',
-    ascending: true,
-  )
-      .order(
-    'unit_number',
-    ascending: true,
+  final response = await supabase.rpc(
+    'get_dop_approval_detail',
+    params: {
+      'p_dop_header_id':
+      cleanedHeaderId,
+    },
   );
 
-  final rawItems = response as List<dynamic>;
-  final details = <DopListItemModel>[];
+  final rawItems =
+  List<Map<String, dynamic>>.from(
+    response,
+  );
+
+  final details =
+  <DopListItemModel>[];
 
   for (final rawItem in rawItems) {
     details.add(
       DopListItemModel.fromMap(
-        Map<String, dynamic>.from(
-          rawItem as Map,
-        ),
+        rawItem,
       ),
     );
   }
+
+  details.sort((
+      DopListItemModel first,
+      DopListItemModel second,
+      ) {
+    final startTimeComparison =
+    first.startTime.compareTo(
+      second.startTime,
+    );
+
+    if (startTimeComparison != 0) {
+      return startTimeComparison;
+    }
+
+    return first.unitNumber.compareTo(
+      second.unitNumber,
+    );
+  });
 
   return details;
 }

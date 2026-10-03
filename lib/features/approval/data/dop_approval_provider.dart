@@ -16,75 +16,17 @@ loadDopApprovalList(
     currentHierarchyLayerProvider.future,
   );
 
-  final companyAccess = await ref.watch(
-    currentCompanyAccessProvider.future,
-  );
-
-  if (hierarchyLayer == null) {
-    return <DopApprovalListItem>[];
-  }
-
-  if (hierarchyLayer < 3) {
+  if (hierarchyLayer == null ||
+      hierarchyLayer < 3) {
     return <DopApprovalListItem>[];
   }
 
   dynamic response;
 
-  if (hierarchyLayer == 3) {
-    if (companyAccess == null) {
-      return <DopApprovalListItem>[];
-    }
-
-    response = await supabase
-        .from('v_dop_approval_list')
-        .select()
-        .eq(
-      'company_id',
-      companyAccess.companyId,
-    )
-        .eq(
-      'status',
-      'pending_layer_3',
-    )
-        .eq(
-      'approval_level',
-      3,
-    )
-        .eq(
-      'approval_status',
-      'pending',
-    )
-        .order(
-      'submitted_at',
-      ascending: true,
-    );
-  } else if (hierarchyLayer == 4) {
-    if (companyAccess == null) {
-      return <DopApprovalListItem>[];
-    }
-
-    response = await supabase
-        .from('v_dop_approval_list')
-        .select()
-        .eq(
-      'company_id',
-      companyAccess.companyId,
-    )
-        .eq(
-      'status',
-      'pending_layer_4',
-    )
-        .eq(
-      'approval_level',
-      4,
-    )
-        .eq(
-      'approval_status',
-      'pending',
-    )
-        .order(
-      'submitted_at',
-      ascending: true,
+  if (hierarchyLayer == 3 ||
+      hierarchyLayer == 4) {
+    response = await supabase.rpc(
+      'get_my_dop_approval_list',
     );
   } else if (hierarchyLayer == 5) {
     response = await supabase
@@ -106,19 +48,30 @@ loadDopApprovalList(
     return <DopApprovalListItem>[];
   }
 
-  final rawItems = response as List<dynamic>;
+  final rawItems =
+  List<Map<String, dynamic>>.from(
+    response,
+  );
+
   final approvalItems =
   <DopApprovalListItem>[];
 
   for (final rawItem in rawItems) {
     approvalItems.add(
       DopApprovalListItem.fromMap(
-        Map<String, dynamic>.from(
-          rawItem as Map,
-        ),
+        rawItem,
       ),
     );
   }
+
+  approvalItems.sort((
+      DopApprovalListItem first,
+      DopApprovalListItem second,
+      ) {
+    return first.submittedAt.compareTo(
+      second.submittedAt,
+    );
+  });
 
   return approvalItems;
 }

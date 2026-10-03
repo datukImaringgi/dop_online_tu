@@ -11,6 +11,7 @@ import 'widgets/master_unit_dialog.dart';
 import 'widgets/master_unit_section.dart';
 import '../domain/operational_master_config.dart';
 import 'widgets/operational_master_section.dart';
+import 'widgets/company_layer_4_group_section.dart';
 
 class MasterPage
     extends ConsumerStatefulWidget {
@@ -434,6 +435,19 @@ class _MasterPageState
     required String? companyId,
     required String? companyName,
   }) {
+    if (selectedMenuIndex == 8) {
+      if (hierarchyLayer != 5) {
+        return const Center(
+          child: Text(
+            'Gabung Layer 4 hanya dapat '
+                'dikelola oleh Layer 5.',
+          ),
+        );
+      }
+
+      return const CompanyLayer4GroupSection();
+    }
+
     if (selectedMenuIndex == 1) {
       return usersAsync.when(
         loading: _buildLoading,
@@ -545,7 +559,10 @@ class _MasterPageState
           children: [
             _buildHeader(),
             const SizedBox(height: 14),
-            _buildMasterMenu(),
+            _buildMasterMenu(
+              currentHierarchyLayer:
+              currentHierarchyLayer,
+            ),
             const SizedBox(height: 12),
             Expanded(
               child: buildSelectedMasterContent(
@@ -566,7 +583,9 @@ class _MasterPageState
     );
   }
 
-  Widget _buildMasterMenu() {
+  Widget _buildMasterMenu({
+    required int? currentHierarchyLayer,
+  }) {
     return SizedBox(
       width: double.infinity,
       child: SingleChildScrollView(
@@ -628,6 +647,14 @@ class _MasterPageState
                 label: 'RIC',
                 icon: Icons.support_agent_outlined,
               ),
+              if (currentHierarchyLayer == 5) ...[
+                const SizedBox(width: 4),
+                _buildMasterMenuButton(
+                  index: 8,
+                  label: 'Gabung Layer 4',
+                  icon: Icons.link_outlined,
+                ),
+              ],
             ],
           ),
         ),
