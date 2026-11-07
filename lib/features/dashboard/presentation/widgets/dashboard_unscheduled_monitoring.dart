@@ -34,20 +34,7 @@ class DashboardUnscheduledMonitoringCard
             if (rows.isEmpty)
               _buildEmptyState()
             else
-              for (
-              var index = 0;
-              index < rows.length;
-              index++
-              ) ...[
-                DashboardUnscheduledBarRow(
-                  row: rows[index],
-                ),
-                if (index < rows.length - 1)
-                  const Divider(
-                    height: 14,
-                    color: Color(0xFFE2E8F0),
-                  ),
-              ],
+              _buildTwoColumnRows(),
           ],
         ),
       ),
@@ -124,6 +111,72 @@ class DashboardUnscheduledMonitoringCard
       ),
     );
   }
+
+  Widget _buildTwoColumnRows() {
+    return LayoutBuilder(
+      builder: (
+          BuildContext context,
+          BoxConstraints constraints,
+          ) {
+        final bool useTwoColumns =
+            constraints.maxWidth >= 800;
+
+        if (!useTwoColumns) {
+          return _buildColumn(rows);
+        }
+
+        final int middleIndex =
+        (rows.length / 2).ceil();
+
+        final List<DashboardUnscheduledRow> leftRows =
+        rows.sublist(0, middleIndex);
+
+        final List<DashboardUnscheduledRow> rightRows =
+        rows.sublist(middleIndex);
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: _buildColumn(leftRows),
+            ),
+            const SizedBox(width: 16),
+            Container(
+              width: 1,
+              color: const Color(0xFFE2E8F0),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: _buildColumn(rightRows),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildColumn(
+      List<DashboardUnscheduledRow> columnRows,
+      ) {
+    return Column(
+      children: [
+        for (
+        var index = 0;
+        index < columnRows.length;
+        index++
+        ) ...[
+          DashboardUnscheduledBarRow(
+            row: columnRows[index],
+          ),
+          if (index < columnRows.length - 1)
+            const Divider(
+              height: 14,
+              color: Color(0xFFE2E8F0),
+            ),
+        ],
+      ],
+    );
+  }
 }
 
 class DashboardUnscheduledBarRow
@@ -140,7 +193,7 @@ class DashboardUnscheduledBarRow
     return Row(
       children: [
         SizedBox(
-          width: 130,
+          width: 200,
           child: Tooltip(
             message: row.companyName,
             child: Text(

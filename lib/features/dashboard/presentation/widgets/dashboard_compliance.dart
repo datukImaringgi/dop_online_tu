@@ -35,20 +35,7 @@ class DashboardComplianceCard
             if (rows.isEmpty)
               buildEmptyState()
             else
-              for (var index = 0;
-              index < rows.length;
-              index++) ...[
-                DashboardComplianceBarRow(
-                  row: rows[index],
-                ),
-                if (index <
-                    rows.length - 1)
-                  const Divider(
-                    height: 14,
-                    color:
-                    Color(0xFFE2E8F0),
-                  ),
-              ],
+              buildTwoColumnRows(),
           ],
         ),
       ),
@@ -129,6 +116,72 @@ class DashboardComplianceCard
       ),
     );
   }
+
+  Widget buildTwoColumnRows() {
+    return LayoutBuilder(
+      builder: (
+          BuildContext context,
+          BoxConstraints constraints,
+          ) {
+        final bool useTwoColumns =
+            constraints.maxWidth >= 800;
+
+        if (!useTwoColumns) {
+          return buildColumn(rows);
+        }
+
+        final int middleIndex =
+        (rows.length / 2).ceil();
+
+        final List<DashboardComplianceRow> leftRows =
+        rows.sublist(0, middleIndex);
+
+        final List<DashboardComplianceRow> rightRows =
+        rows.sublist(middleIndex);
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: buildColumn(leftRows),
+            ),
+            const SizedBox(width: 16),
+            Container(
+              width: 1,
+              color: const Color(0xFFE2E8F0),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: buildColumn(rightRows),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget buildColumn(
+      List<DashboardComplianceRow> columnRows,
+      ) {
+    return Column(
+      children: [
+        for (
+        var index = 0;
+        index < columnRows.length;
+        index++
+        ) ...[
+          DashboardComplianceBarRow(
+            row: columnRows[index],
+          ),
+          if (index < columnRows.length - 1)
+            const Divider(
+              height: 14,
+              color: Color(0xFFE2E8F0),
+            ),
+        ],
+      ],
+    );
+  }
 }
 
 class DashboardComplianceBarRow
@@ -145,7 +198,7 @@ class DashboardComplianceBarRow
     return Row(
       children: [
         SizedBox(
-          width: 130,
+          width: 200,
           child: Text(
             row.companyName,
             maxLines: 1,

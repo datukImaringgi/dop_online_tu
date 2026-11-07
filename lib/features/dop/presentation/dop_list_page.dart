@@ -63,21 +63,6 @@ class _DopListPageState extends ConsumerState<DopListPage> {
         '${formatFilterDate(range.to)}';
   }
 
-  List<String> _buildOptions(List<String> values) {
-    final set = <String>{};
-
-    for (final value in values) {
-      if (value.trim().isNotEmpty && value != '-') {
-        set.add(value);
-      }
-    }
-
-    final result = set.toList();
-    result.sort();
-
-    return ['Semua', ...result];
-  }
-
   Future<void>
   pickCustomDateRange() async {
     final currentFilter = ref.read(
@@ -163,12 +148,23 @@ class _DopListPageState extends ConsumerState<DopListPage> {
   void handleDopNumberSearchChanged(
       String value,
       ) {
+    final normalizedValue =
+    normalizeSearchText(value);
+
     resetPagination();
 
     setState(() {
       dopNumberSearchQuery =
-          normalizeSearchText(value);
+          normalizedValue;
     });
+
+    ref
+        .read(
+      dopListQueryFilterProvider.notifier,
+    )
+        .setDopNumberQuery(
+      normalizedValue,
+    );
   }
 
   void handlePageChanged(int page) {
@@ -200,9 +196,17 @@ class _DopListPageState extends ConsumerState<DopListPage> {
   void clearDopNumberSearch() {
     dopNumberSearchController.clear();
 
+    resetPagination();
+
     setState(() {
       dopNumberSearchQuery = '';
     });
+
+    ref
+        .read(
+      dopListQueryFilterProvider.notifier,
+    )
+        .setDopNumberQuery('');
   }
 
   String normalizeSearchText(String value) {
@@ -223,6 +227,14 @@ class _DopListPageState extends ConsumerState<DopListPage> {
     final dateFilter = ref.watch(
       dopListDateFilterProvider,
     );
+
+    final filterOptionsAsync = ref.watch(
+      dopListFilterOptionsProvider,
+    );
+
+    final databaseFilterOptions =
+        filterOptionsAsync.value ??
+            DopListFilterOptions.empty;
 
     final customDateRangeLabel =
     buildCustomDateRangeLabel(
@@ -248,84 +260,41 @@ class _DopListPageState extends ConsumerState<DopListPage> {
           },
           data: (queryResult) {
             final items = queryResult.items;
-            final companyOptions = _buildOptions(
-              items.map((item) => item.companyName).toList(),
-            );
 
-            final siteOptions = _buildOptions(
-              items.map((item) => item.jobSite).toList(),
-            );
+            final companyOptions = <String>[
+              'Semua',
+              ...databaseFilterOptions.companies,
+            ];
 
-            final unitTypeOptions = _buildOptions(
-              items.map((item) => item.unitType).toList(),
-            );
+            final siteOptions = <String>[
+              'Semua',
+              ...databaseFilterOptions.jobSites,
+            ];
 
-            final unitNumberOptions = _buildOptions(
-              items.map((item) {
-                return item.unitNumber;
-              }).toList(),
-            );
+            final unitTypeOptions = <String>[
+              'Semua',
+              ...databaseFilterOptions.unitTypes,
+            ];
 
-            final areaTypeOptions = _buildOptions(
-              items.map((item) {
-                return item.areaType;
-              }).toList(),
-            );
+            final unitNumberOptions = <String>[
+              'Semua',
+              ...databaseFilterOptions.unitNumbers,
+            ];
 
-            final shiftOptions = _buildOptions(
-              items.map((item) {
-                return item.shift;
-              }).toList(),
-            );
+            final areaTypeOptions = <String>[
+              'Semua',
+              ...databaseFilterOptions.areaTypes,
+            ];
 
-            final statusOptions = _buildOptions(
-              items.map((item) => item.status).toList(),
-            );
+            final shiftOptions = <String>[
+              'Semua',
+              ...databaseFilterOptions.shifts,
+            ];
 
-            final filteredItems = items.where((item) {
-              final matchUnitNumber =
-                  selectedUnitNumber == 'Semua' ||
-                      item.unitNumber == selectedUnitNumber;
-
-              final matchAreaType =
-                  selectedAreaType == 'Semua' ||
-                      item.areaType == selectedAreaType;
-
-              final matchShift =
-                  selectedShift == 'Semua' ||
-                      item.shift == selectedShift;
-
-              final matchCompany = selectedCompany == 'Semua' ||
-                  item.companyName == selectedCompany;
-
-              final matchSite = selectedSite == 'Semua' ||
-                  item.jobSite == selectedSite;
-
-              final matchUnitType = selectedUnitType == 'Semua' ||
-                  item.unitType == selectedUnitType;
-
-              final matchStatus = selectedStatus == 'Semua' ||
-                  item.status == selectedStatus;
-
-              final normalizedDopNumber = normalizeSearchText(
-                  item.dopNumber,
-              );
-
-              final matchDopNumber =
-              dopNumberSearchQuery.isEmpty ||
-              normalizedDopNumber.contains(
-                  dopNumberSearchQuery,
-              );
-
-              return matchCompany &&
-                  matchSite &&
-                  matchUnitType &&
-                  matchUnitNumber &&
-                  matchAreaType &&
-                  matchShift &&
-                  matchStatus &&
-                  matchDopNumber;
-            }).toList();
+            final statusOptions = <String>[
+              'Semua',
+              ...databaseFilterOptions.statuses,
+            ];
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -409,42 +378,50 @@ class _DopListPageState extends ConsumerState<DopListPage> {
                   ],
                 ),
 
-                const SizedBox(height: 18),
+                const SizedBox(height: 12),
 
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Padding(
-                    padding: const EdgeInsets.only(left: 6),
-                    child: SizedBox(
-                      width: 250,
+                Row(
+                  crossAxisAlignment:
+                  CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(
+                      width: 300,
+                      height: 40,
                       child: TextField(
-                        controller: dopNumberSearchController,
-                        onChanged: handleDopNumberSearchChanged,
+                        controller:
+                        dopNumberSearchController,
+                        onChanged:
+                        handleDopNumberSearchChanged,
                         decoration: InputDecoration(
                           labelText: 'Cari No. DOP',
-                          hintText: 'Contoh: 20260824-001',
+                          hintText: 'Contoh: 20261003-001',
                           labelStyle: const TextStyle(
                             fontSize: 12,
                             color: Color(0xFF475569),
                           ),
                           hintStyle: const TextStyle(
-                            fontSize: 13,
+                            fontSize: 12,
                             color: Color(0xFF94A3B8),
                           ),
                           prefixIcon: const Icon(
                             Icons.search,
                             size: 16,
                           ),
-                          prefixIconConstraints: const BoxConstraints(
+                          prefixIconConstraints:
+                          const BoxConstraints(
                             minWidth: 34,
-                            minHeight: 34,
+                            minHeight: 30,
                           ),
-                          suffixIcon: dopNumberSearchQuery.isEmpty
+                          suffixIcon:
+                          dopNumberSearchQuery.isEmpty
                               ? null
                               : IconButton(
-                            onPressed: clearDopNumberSearch,
-                            tooltip: 'Hapus pencarian',
-                            visualDensity: VisualDensity.compact,
+                            onPressed:
+                            clearDopNumberSearch,
+                            tooltip:
+                            'Hapus pencarian',
+                            visualDensity:
+                            VisualDensity.compact,
                             icon: const Icon(
                               Icons.close,
                               size: 18,
@@ -453,16 +430,14 @@ class _DopListPageState extends ConsumerState<DopListPage> {
                           isDense: true,
                           filled: true,
                           fillColor: Colors.white,
-                          contentPadding: const EdgeInsets.symmetric(
+                          contentPadding:
+                          const EdgeInsets.symmetric(
                             horizontal: 10,
-                            vertical: 7,
-                          ),
-                          constraints: const BoxConstraints(
-                            minHeight: 44,
-                            maxHeight: 44,
+                            vertical: 4,
                           ),
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(7),
+                            borderRadius:
+                            BorderRadius.circular(7),
                           ),
                         ),
                         style: const TextStyle(
@@ -471,10 +446,67 @@ class _DopListPageState extends ConsumerState<DopListPage> {
                         ),
                       ),
                     ),
-                  ),
-                ),
+                    const SizedBox(width: 10),
+                    DopListPrimaryFilterRow(
+                      companyOptions: companyOptions,
+                      siteOptions: siteOptions,
+                      selectedCompany:
+                      selectedCompany,
+                      selectedSite:
+                      selectedSite,
+                      selectedPeriod:
+                      dateFilter.period,
+                      customDateRangeLabel:
+                      customDateRangeLabel,
+                      onPeriodChanged: (period) {
+                        if (period ==
+                            DopListPeriod.custom) {
+                          return;
+                        }
 
-                const SizedBox(height: 2),
+                        resetPagination();
+
+                        ref
+                            .read(
+                          dopListDateFilterProvider
+                              .notifier,
+                        )
+                            .setPeriod(period);
+                      },
+                      onCustomDateRangeTap:
+                      pickCustomDateRange,
+                      onCompanyChanged: (value) {
+                        resetPagination();
+
+                        setState(() {
+                          selectedCompany = value;
+                          selectedSite = 'Semua';
+                          selectedUnitNumber = 'Semua';
+                        });
+
+                        ref
+                            .read(
+                          dopListQueryFilterProvider.notifier,
+                        )
+                            .setCompany(value);
+                      },
+                      onSiteChanged: (value) {
+                        resetPagination();
+
+                        setState(() {
+                          selectedSite = value;
+                          selectedUnitNumber = 'Semua';
+                        });
+
+                        ref
+                            .read(
+                          dopListQueryFilterProvider.notifier,
+                        )
+                            .setJobSite(value);
+                      },
+                    ),
+                  ],
+                ),
 
                 DopListFilterBar(
                   companyOptions: companyOptions,
@@ -517,6 +549,12 @@ class _DopListPageState extends ConsumerState<DopListPage> {
                     setState(() {
                       selectedUnitType = value;
                     });
+
+                    ref
+                        .read(
+                      dopListQueryFilterProvider.notifier,
+                    )
+                        .setUnitType(value);
                   },
                   onUnitNumberChanged: (value) {
                     resetPagination();
@@ -524,6 +562,12 @@ class _DopListPageState extends ConsumerState<DopListPage> {
                     setState(() {
                       selectedUnitNumber = value;
                     });
+
+                    ref
+                        .read(
+                      dopListQueryFilterProvider.notifier,
+                    )
+                        .setUnitNumber(value);
                   },
                   onAreaTypeChanged: (value) {
                     resetPagination();
@@ -531,6 +575,12 @@ class _DopListPageState extends ConsumerState<DopListPage> {
                     setState(() {
                       selectedAreaType = value;
                     });
+
+                    ref
+                        .read(
+                      dopListQueryFilterProvider.notifier,
+                    )
+                        .setAreaType(value);
                   },
                   onShiftChanged: (value) {
                     resetPagination();
@@ -538,6 +588,12 @@ class _DopListPageState extends ConsumerState<DopListPage> {
                     setState(() {
                       selectedShift = value;
                     });
+
+                    ref
+                        .read(
+                      dopListQueryFilterProvider.notifier,
+                    )
+                        .setShift(value);
                   },
                   onStatusChanged: (value) {
                     resetPagination();
@@ -545,6 +601,12 @@ class _DopListPageState extends ConsumerState<DopListPage> {
                     setState(() {
                       selectedStatus = value;
                     });
+
+                    ref
+                        .read(
+                      dopListQueryFilterProvider.notifier,
+                    )
+                        .setStatus(value);
                   },
                   onPeriodChanged: (period) {
                     if (period ==
@@ -598,17 +660,8 @@ class _DopListPageState extends ConsumerState<DopListPage> {
                               ),
                             ),
                           )
-                              : filteredItems.isEmpty
-                              ? const Center(
-                            child: Text(
-                              'Tidak ada data sesuai filter.',
-                              style: TextStyle(
-                                color: Color(0xFF64748B),
-                              ),
-                            ),
-                          )
                               : _DopDataTable(
-                            items: filteredItems,
+                            items: items,
                             onContinueDraft: (
                                 DopListItemModel item,
                                 ) {

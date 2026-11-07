@@ -429,24 +429,19 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                 ),
               ),
               const SizedBox(height: 12),
+              DashboardComplianceCard(
+                rows: complianceRows,
+              ),
+
+              const SizedBox(height: 12),
+
+              DashboardUnscheduledMonitoringCard(
+                rows: unscheduledRows,
+              ),
+              const SizedBox(height: 12),
               DashboardTransportAreaSection(
                 jalanNegaraRows: jalanNegaraRows,
                 siteRows: siteRows,
-              ),
-              const SizedBox(height: 12),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                      child: DashboardComplianceCard(rows: complianceRows)
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: DashboardUnscheduledMonitoringCard(
-                      rows: unscheduledRows,
-                    ),
-                  ),
-                ],
               ),
               const SizedBox(height: 12),
               const Row(

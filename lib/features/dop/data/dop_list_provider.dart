@@ -103,6 +103,254 @@ NotifierProvider<
   DopListDateFilterNotifier.new,
 );
 
+class DopListQueryFilter {
+  final String companyName;
+  final String jobSite;
+  final String unitType;
+  final String unitNumber;
+  final String areaType;
+  final String shift;
+  final String status;
+  final String dopNumberQuery;
+
+  const DopListQueryFilter({
+    this.companyName = 'Semua',
+    this.jobSite = 'Semua',
+    this.unitType = 'Semua',
+    this.unitNumber = 'Semua',
+    this.areaType = 'Semua',
+    this.shift = 'Semua',
+    this.status = 'Semua',
+    this.dopNumberQuery = '',
+  });
+
+  DopListQueryFilter copyWith({
+    String? companyName,
+    String? jobSite,
+    String? unitType,
+    String? unitNumber,
+    String? areaType,
+    String? shift,
+    String? status,
+    String? dopNumberQuery,
+  }) {
+    return DopListQueryFilter(
+      companyName:
+      companyName ?? this.companyName,
+      jobSite:
+      jobSite ?? this.jobSite,
+      unitType:
+      unitType ?? this.unitType,
+      unitNumber:
+      unitNumber ?? this.unitNumber,
+      areaType:
+      areaType ?? this.areaType,
+      shift:
+      shift ?? this.shift,
+      status:
+      status ?? this.status,
+      dopNumberQuery:
+      dopNumberQuery ??
+          this.dopNumberQuery,
+    );
+  }
+}
+
+class DopListQueryFilterNotifier
+    extends Notifier<DopListQueryFilter> {
+  @override
+  DopListQueryFilter build() {
+    return const DopListQueryFilter();
+  }
+
+  void setCompany(String value) {
+    state = state.copyWith(
+      companyName: value,
+      jobSite: 'Semua',
+      unitNumber: 'Semua',
+    );
+  }
+
+  void setJobSite(String value) {
+    state = state.copyWith(
+      jobSite: value,
+      unitNumber: 'Semua',
+    );
+  }
+
+  void setUnitType(String value) {
+    state = state.copyWith(
+      unitType: value,
+    );
+  }
+
+  void setUnitNumber(String value) {
+    state = state.copyWith(
+      unitNumber: value,
+    );
+  }
+
+  void setAreaType(String value) {
+    state = state.copyWith(
+      areaType: value,
+    );
+  }
+
+  void setShift(String value) {
+    state = state.copyWith(
+      shift: value,
+    );
+  }
+
+  void setStatus(String value) {
+    state = state.copyWith(
+      status: value,
+    );
+  }
+
+  void setDopNumberQuery(String value) {
+    state = state.copyWith(
+      dopNumberQuery: value.trim(),
+    );
+  }
+
+  void reset() {
+    state = const DopListQueryFilter();
+  }
+}
+
+final dopListQueryFilterProvider =
+NotifierProvider<
+    DopListQueryFilterNotifier,
+    DopListQueryFilter>(
+  DopListQueryFilterNotifier.new,
+);
+
+class DopListFilterOptions {
+  final List<String> companies;
+  final List<String> jobSites;
+  final List<String> unitTypes;
+  final List<String> unitNumbers;
+  final List<String> areaTypes;
+  final List<String> shifts;
+  final List<String> statuses;
+
+  const DopListFilterOptions({
+    required this.companies,
+    required this.jobSites,
+    required this.unitTypes,
+    required this.unitNumbers,
+    required this.areaTypes,
+    required this.shifts,
+    required this.statuses,
+  });
+
+  static const empty = DopListFilterOptions(
+    companies: <String>[],
+    jobSites: <String>[],
+    unitTypes: <String>[],
+    unitNumbers: <String>[],
+    areaTypes: <String>[],
+    shifts: <String>[],
+    statuses: <String>[],
+  );
+}
+
+final dopListFilterOptionsProvider =
+FutureProvider<DopListFilterOptions>(
+      (ref) async {
+    final supabase = ref.watch(
+      supabaseProvider,
+    );
+
+    final dateFilter = ref.watch(
+      dopListDateFilterProvider,
+    );
+
+    final dateRange = _resolveDateRange(
+      dateFilter,
+    );
+
+    final response = await supabase.rpc(
+      'get_dop_list_filter_options',
+      params: {
+        'p_date_from': _formatDate(
+          dateRange.from,
+        ),
+        'p_date_to': _formatDate(
+          dateRange.to,
+        ),
+      },
+    );
+
+    final records =
+    List<Map<String, dynamic>>.from(
+      response,
+    );
+
+    final values =
+    <String, Set<String>>{};
+
+    for (final record in records) {
+      final type = record['filter_type']
+          ?.toString()
+          .trim();
+
+      final value = record['filter_value']
+          ?.toString()
+          .trim();
+
+      if (type == null ||
+          type.isEmpty ||
+          value == null ||
+          value.isEmpty) {
+        continue;
+      }
+
+      values
+          .putIfAbsent(
+        type,
+            () => <String>{},
+      )
+          .add(value);
+    }
+
+    List<String> readOptions(
+        String type,
+        ) {
+      final result =
+          values[type]?.toList() ??
+              <String>[];
+
+      result.sort(
+            (first, second) =>
+            first.toLowerCase().compareTo(
+              second.toLowerCase(),
+            ),
+      );
+
+      return result;
+    }
+
+    return DopListFilterOptions(
+      companies:
+      readOptions('company_name'),
+      jobSites:
+      readOptions('job_site'),
+      unitTypes:
+      readOptions('unit_type'),
+      unitNumbers:
+      readOptions('unit_number'),
+      areaTypes:
+      readOptions('area_type'),
+      shifts:
+      readOptions('shift'),
+      statuses:
+      readOptions('status'),
+    );
+  },
+);
+
 class DopListPaginationState {
   final int currentPage;
   final int rowsPerPage;
@@ -274,6 +522,10 @@ FutureProvider<DopListQueryResult>(
       dopListPaginationProvider,
     );
 
+    final queryFilter = ref.watch(
+      dopListQueryFilterProvider,
+    );
+
     final dateRange = _resolveDateRange(
       dateFilter,
     );
@@ -333,6 +585,16 @@ FutureProvider<DopListQueryResult>(
         companyAccess.companyId,
       );
     }
+
+    dataQuery = applyDopListQueryFilter(
+      dataQuery,
+      queryFilter,
+    );
+
+    countQuery = applyDopListQueryFilter(
+      countQuery,
+      queryFilter,
+    );
 
     final countResponse =
     await countQuery.count(
@@ -444,6 +706,72 @@ FutureProvider<DopListQueryResult>(
     );
   },
 );
+
+dynamic applyDopListQueryFilter(
+    dynamic query,
+    DopListQueryFilter filter,
+    ) {
+  if (filter.companyName != 'Semua') {
+    query = query.eq(
+      'company_name',
+      filter.companyName,
+    );
+  }
+
+  if (filter.jobSite != 'Semua') {
+    query = query.eq(
+      'job_site',
+      filter.jobSite,
+    );
+  }
+
+  if (filter.unitType != 'Semua') {
+    query = query.eq(
+      'unit_type',
+      filter.unitType,
+    );
+  }
+
+  if (filter.unitNumber != 'Semua') {
+    query = query.eq(
+      'unit_number',
+      filter.unitNumber,
+    );
+  }
+
+  if (filter.areaType != 'Semua') {
+    query = query.eq(
+      'area_type',
+      filter.areaType,
+    );
+  }
+
+  if (filter.shift != 'Semua') {
+    query = query.eq(
+      'shift',
+      filter.shift,
+    );
+  }
+
+  if (filter.status != 'Semua') {
+    query = query.eq(
+      'status',
+      filter.status,
+    );
+  }
+
+  final dopNumberQuery =
+  filter.dopNumberQuery.trim();
+
+  if (dopNumberQuery.isNotEmpty) {
+    query = query.ilike(
+      'dop_number',
+      '%$dopNumberQuery%',
+    );
+  }
+
+  return query;
+}
 
 final dashboardDopListProvider =
 FutureProvider<List<DopListItemModel>>(
