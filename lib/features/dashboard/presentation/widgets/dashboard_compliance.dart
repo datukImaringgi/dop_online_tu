@@ -57,16 +57,24 @@ class DashboardComplianceCard
         ),
         buildLegend(
           label: 'Comply',
+          tooltip:
+          'Full approved sebelum pukul 16:00',
           color: const Color(0xFF22C55E),
         ),
         const SizedBox(width: 8),
         buildLegend(
           label: '> 2 Jam',
+          tooltip:
+          'Belum approved atau full approved '
+              'pukul 16:00 sampai 18:00',
           color: const Color(0xFFF59E0B),
         ),
         const SizedBox(width: 8),
         buildLegend(
           label: '> 12 Jam',
+          tooltip:
+          'Belum approved atau full approved '
+              'setelah pukul 18:00',
           color: const Color(0xFFEF4444),
         ),
       ],
@@ -75,30 +83,39 @@ class DashboardComplianceCard
 
   Widget buildLegend({
     required String label,
+    required String tooltip,
     required Color color,
   }) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius:
-            BorderRadius.circular(2),
-          ),
+    return Tooltip(
+      message: tooltip,
+      waitDuration:
+      const Duration(milliseconds: 350),
+      child: MouseRegion(
+        cursor: SystemMouseCursors.help,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius:
+                BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: const TextStyle(
+                color: Color(0xFF64748B),
+                fontSize: 9,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 4),
-        Text(
-          label,
-          style: const TextStyle(
-            color: Color(0xFF64748B),
-            fontSize: 9,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
+      ),
     );
   }
 

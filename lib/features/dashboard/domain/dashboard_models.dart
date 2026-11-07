@@ -359,11 +359,6 @@ class DashboardCalculation {
         calculationTime = approvedAt.toLocal();
       }
 
-      final duration =
-      calculationTime.difference(
-        benchmark,
-      );
-
       final companyName =
       item.companyName.trim();
 
@@ -378,15 +373,24 @@ class DashboardCalculation {
         DashboardComplianceCounter.new,
       );
 
-      if (duration >
-          const Duration(hours: 12)) {
+      final overdueTwelveLimit = DateTime(
+        benchmark.year,
+        benchmark.month,
+        benchmark.day,
+        18,
+      );
+
+      if (calculationTime.isAfter(
+        overdueTwelveLimit,
+      )) {
         overdueTwelve++;
         counter.overdueTwelve++;
         continue;
       }
 
-      if (duration >
-          const Duration(hours: 2)) {
+      if (!calculationTime.isBefore(
+        benchmark,
+      )) {
         overdueTwo++;
         counter.overdueTwo++;
         continue;
